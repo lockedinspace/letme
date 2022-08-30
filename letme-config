@@ -1,0 +1,5 @@
+[general]
+aws_source_profile = ""
+aws_source_profile_region = ""
+dynamodb_table = ""
+mfa_arn = ""

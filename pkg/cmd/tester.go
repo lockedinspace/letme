@@ -29,16 +29,19 @@ var testCmd = &cobra.Command{
 			Mfa_arn                   string `toml:"mfa_arn,omitempty"`
 		}
 		type general map[string]generalParams
-		
 		// reading file and decoding it
+		
 		a := "letme-config"
 		b, err := os.UserHomeDir()
 		utils.CheckAndReturnError(err)
-
 		if _, err := os.Stat(a); err != nil {
-			a = b+"/letme-config"
+			a = b + "/.letme/letme-config"
+			if _, err := os.Stat(a); err != nil {
+				fmt.Println("letme: Could not locate letme-config file. Please run 'letme config-file'")
+				os.Exit(1)
+			}
 		}
-
+		
 		var generalConfig general
 
 		c, err := toml.DecodeFile(a, &generalConfig)
@@ -49,7 +52,7 @@ var testCmd = &cobra.Command{
 		if len(d) == 0 {
 			
 		} else {
-			fmt.Printf("ERROR: Unknown key: %q\n", d)
+			fmt.Printf("letme: Unknown key: %q\n", d)
 			os.Exit(1)
 		}
 		var exportedProfile string
@@ -99,13 +102,14 @@ var testCmd = &cobra.Command{
 		
 		}
 		m, err := os.Create(b+"/.letme-cache")
-			utils.CheckAndReturnError(err)
-			defer m.Close()
-			fmt.Println("Cache file stored on " + b + "/.letme-cache")
-			n := bufio.NewWriter(m)
-			_, err = fmt.Fprintf(n, "%v;\n", exportedId)
-			utils.CheckAndReturnError(err)
-			n.Flush()
+		utils.CheckAndReturnError(err)
+		defer m.Close()
+		
+		n := bufio.NewWriter(m)
+		_, err = fmt.Fprintf(n, "%v;\n", exportedId)
+		utils.CheckAndReturnError(err)
+		n.Flush()
+		fmt.Println("Cache file stored on " + b + "/.letme-cache")
 	},
 }
 

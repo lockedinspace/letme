@@ -6,12 +6,16 @@ import (
 	"os/exec"
 )
 
-func CommandExists(a string) bool {
-	_, erra := exec.LookPath(a)
-	if erra != nil {
-		fmt.Println(erra)
+func CommandExists(a string)  {
+	_, err := exec.LookPath(a)
+	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
-		return false
 	}
-	return true
+}
+func CheckAndReturnError(err error) {
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }

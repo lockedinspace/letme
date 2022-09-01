@@ -12,6 +12,7 @@ func CommandExists(command string) {
 	_, err := exec.LookPath(command)
 	CheckAndReturnError(err)
 }
+
 // this function checks the error, if the error contains a message, stop the execution and show the error to the user
 func CheckAndReturnError(err error) {
 	if err != nil {
@@ -19,6 +20,7 @@ func CheckAndReturnError(err error) {
 		os.Exit(1)
 	}
 }
+
 // marshall data into a toml file
 func TemplateConfigFile() string {
 	var (

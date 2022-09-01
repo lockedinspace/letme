@@ -4,8 +4,8 @@ import (
 	"os"
 	"fmt"
 	"bufio"
-	"github.com/BurntSushi/toml"
 	"github.com/spf13/cobra"
+	"github.com/BurntSushi/toml"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -17,10 +17,10 @@ import (
 
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Use a cache to improve response times",
-	Long: `Create a cache text file on the $HOME directory.
-IDs, account names, roles to be assumed and regions will be present on the cache file, this will 
-improve performance because common queries will be satisified by the cache file and will not
+	Short: "Create a cache to speed up response times",
+	Long: `Creates a cache file on the $HOME directory.
+IDs, account names, roles to be assumed and regions will be present on the cache file. 
+This will improve performance because common queries will be satisified by the cache file and will not
 be routed to the DynamoDB service from AWS. 
 
 If the end user prefers to satisfy all their queries through internet, they can remove the cache file
@@ -70,9 +70,9 @@ with the command 'letme init remove' or just deleting the .letme-cache manually.
 
 		// create a struct to hold the data that will be passed into .letme-cache file
 		type account struct {
-			Id          int    `json:"id"`
-			Name        string `json:"name"`
-			Role        string `json:"role"`
+			Id          int      `json:"id"`
+			Name        string   `json:"name"`
+			Role        string   `json:"role"`
 			Region      []string `json:"region"`
 		}
 

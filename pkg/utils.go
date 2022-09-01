@@ -1,36 +1,28 @@
 package utils
 
 import (
-	"fmt"
 	"os"
-	"os/exec"
+	"fmt"
 	"bytes"
-	"github.com/BurntSushi/toml"	
+	"os/exec"
+	"github.com/BurntSushi/toml"
 )
-
-func CommandExists(command string)  {
+// this function checks if a command exists
+func CommandExists(command string) {
 	_, err := exec.LookPath(command)
 	CheckAndReturnError(err)
 }
+// this function checks the error, if the error contains a message, stop the execution and show the error to the user
 func CheckAndReturnError(err error) {
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 }
-func CheckConfigExists() string {
-	a, err := os.UserHomeDir()
-	CheckAndReturnError(err)
-	if _, err := os.Stat(a + "/.letme/letme-config"); err != nil {
-		fmt.Println("letme: Could not find config file. Please run 'letme config-file'")
-	}
-	return a + "/.letme/letme-config"
-
-}
-
+// marshall data into a toml file
 func TemplateConfigFile() string {
 	var (
-		buf     = new(bytes.Buffer)
+		buf = new(bytes.Buffer)
 	)
 	err := toml.NewEncoder(buf).Encode(map[string]interface{}{
 		"general": map[string]string{

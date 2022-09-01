@@ -19,7 +19,7 @@ Deleting this file could cause higher waiting times when retrieving information.
 		if _, err := os.Stat(homeDir + "/.letme/.letme-cache"); err == nil {
 			err := os.Remove(homeDir + "/.letme/.letme-cache")
 			utils.CheckAndReturnError(err)
-			fmt.Println("Cache file succesfully removed.")
+			fmt.Println("Cache file successfully removed.")
 		} else {
 			fmt.Println("letme: Could not find nor remove cache file.")
 			os.Exit(1)

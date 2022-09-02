@@ -27,19 +27,13 @@ If the end user prefers to satisfy all their queries through internet, they can 
 with the command 'letme init remove' or just deleting the .letme-cache manually.
         `,
         Run: func(cmd *cobra.Command, args []string) {
-                // generate a struct to unmarshal the letme-config (toml) document.
-                type generalParams struct {
-                        Aws_source_profile        string
-                        Aws_source_profile_region string `toml:"aws_source_profile_region,omitempty"`
-                        Dynamodb_table            string
-                        Mfa_arn                   string `toml:"mfa_arn,omitempty"`
-                }
-                type general map[string]generalParams
+                // import a struct to unmarshal the letme-config (toml) document.
+                type structUnmarshall = utils.GeneralParams
+                type general map[string]structUnmarshall
                 var generalConfig general
 
                 // check user home directory and save it into a variable.
-                homeDir, err := os.UserHomeDir()
-                utils.CheckAndReturnError(err)
+                homeDir := utils.GetHomeDirectory()
                 configFilePath := homeDir + "/.letme/letme-config"
                 if _, err := os.Stat(configFilePath); err != nil {
                         fmt.Println("letme: Could not locate any config file. Please run 'letme config-file' to create one.")

@@ -23,8 +23,7 @@ your values.
 
                 // define file name and grab user home directory
                 fileName := "letme-config"
-                homeDir, err := os.UserHomeDir()
-                utils.CheckAndReturnError(err)
+                homeDir := utils.GetHomeDirectory()
 
                 // conditional statement which creats either the directory + config file or just the config file if the directory already exists
                 // then writes  the marshalled values on a toml document (letme-config).
@@ -68,4 +67,5 @@ func init() {
 
         // create a local force flag
         configFileCmd.Flags().BoolVarP(&Region, "force", "f", false, "bypass safety restrictions and force a command to be run")
+        configFileCmd.Flags().BoolVarP(&Region, "verify", "v", false, "verify config file structure and integrity")
 }

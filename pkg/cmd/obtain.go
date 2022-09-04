@@ -1,6 +1,7 @@
 package letme
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -9,9 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"regexp"
-	"bufio"
-	
-
 )
 
 var obtainCmd = &cobra.Command{
@@ -21,7 +19,7 @@ var obtainCmd = &cobra.Command{
 		} else {
 			fmt.Println("letme: Could not locate any config file. Please run 'letme config-file' to create one.")
 			os.Exit(1)
-		}		
+		}
 	},
 	Short: "Obtain aws credentials",
 	Long: `Through the AWS Security Token Service, obtain temporal credentials
@@ -39,7 +37,7 @@ and can be used with the argument '--profile example1' within the aws cli binary
 		utils.CheckAndReturnError(err)
 		if utils.CacheFileExists() {
 			//fmt.Println(strings.Split(utils.CacheFileRead(), ","))
-			accountExists, err := regexp.MatchString("\\b" + args[0] + "\\b", utils.CacheFileRead())
+			accountExists, err := regexp.MatchString("\\b"+args[0]+"\\b", utils.CacheFileRead())
 			utils.CheckAndReturnError(err)
 			if accountExists {
 				file, err := os.Open(utils.GetHomeDirectory() + "/.letme/.letme-cache")
@@ -49,10 +47,10 @@ and can be used with the argument '--profile example1' within the aws cli binary
 				//var fullLineR string
 				for scanner.Scan() {
 					a := scanner.Text()
-					fullLine, err := regexp.MatchString("\\b" + args[0] + "\\b", a) 
+					fullLine, err := regexp.MatchString("\\b"+args[0]+"\\b", a)
 					utils.CheckAndReturnError(err)
 					if fullLine {
-						//fullLineR = a 
+						//fullLineR = a
 					}
 				}
 				//fmt.Printf(fullLineR)

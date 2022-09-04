@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/BurntSushi/toml"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"reflect"
-	"io/ioutil"
 )
 
 // struct to unmarshal toml (will be modified as new options are demanded)
@@ -20,11 +20,12 @@ type GeneralParams struct {
 
 // struct to parse cache data
 type CacheFields struct {
-	Id		int `toml:"id"`
-	Name	string `toml:"name"`
-	Role	[]string `toml:"role"`
-	Region  []string `toml:"region"`
+	Id     int      `toml:"id"`
+	Name   string   `toml:"name"`
+	Role   []string `toml:"role"`
+	Region []string `toml:"region"`
 }
+
 // this function checks if a command exists
 func CommandExists(command string) {
 	_, err := exec.LookPath(command)
@@ -63,15 +64,16 @@ func TemplateCacheFile(accountName string, accountID int, accountRole []string, 
 	)
 	err := toml.NewEncoder(buf).Encode(map[string]interface{}{
 		accountName: map[string]interface{}{
-			"id":        		accountID,
-			"name": 			accountName,
-			"role":            	accountRole,
-			"region":           accountRegion,
+			"id":     accountID,
+			"name":   accountName,
+			"role":   accountRole,
+			"region": accountRegion,
 		},
 	})
 	CheckAndReturnError(err)
 	return buf.String()
 }
+
 // this function returns the caller $HOME directory
 func GetHomeDirectory() string {
 	homeDir, err := os.UserHomeDir()
@@ -98,12 +100,12 @@ func ConfigFileResultString(field string) string {
 }
 
 // this function checks if a cache file exists
-func CacheFileExists() bool{
-        if _, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-cache"); err == nil {
-                return true
-        } else {
-                return false
-        }
+func CacheFileExists() bool {
+	if _, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-cache"); err == nil {
+		return true
+	} else {
+		return false
+	}
 }
 
 // this function reads the cache file
@@ -115,7 +117,7 @@ func CacheFileRead() string {
 }
 
 // this function maps data on the cache file into a struct
-func ParseCacheFile(account string) CacheFields{
+func ParseCacheFile(account string) CacheFields {
 	type o = CacheFields
 	type general map[string]o
 	var generalConfig general
@@ -129,6 +131,7 @@ func ParseCacheFile(account string) CacheFields{
 		s := generalConfig[name]
 		fmt.Printf(s.Name)
 	} */
-	
+
 }
+
 // TODO: function which validates a toml file against a struct

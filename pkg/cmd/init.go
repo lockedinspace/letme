@@ -66,7 +66,7 @@ with the command 'letme init remove' or just deleting the .letme-cache manually.
 		type account struct {
 			Id     int      `json:"id"`
 			Name   string   `json:"name"`
-			Role   []string   `json:"role"`
+			Role   []string `json:"role"`
 			Region []string `json:"region"`
 		}
 
@@ -104,8 +104,8 @@ with the command 'letme init remove' or just deleting the .letme-cache manually.
 			err = dynamodbattribute.UnmarshalMap(i, &item)
 			utils.CheckAndReturnError(err)
 			// save the exported variables into a file (.letme-cache) this will improve performance because common queries will be satisified by the cache file
-			
-			_, err = fmt.Fprintf(cacheFileWriter, "%v", utils.TemplateCacheFile(item.Name, item.Id, item.Role, item.Region ))
+
+			_, err = fmt.Fprintf(cacheFileWriter, "%v", utils.TemplateCacheFile(item.Name, item.Id, item.Role, item.Region))
 			utils.CheckAndReturnError(err)
 			cacheFileWriter.Flush()
 

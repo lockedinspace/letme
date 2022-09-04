@@ -28,8 +28,8 @@ with the command 'letme init remove' or just deleting the .letme-cache manually.
         `,
 	Run: func(cmd *cobra.Command, args []string) {
 		// import a struct to unmarshal the letme-config (toml) document.
-		type structUnmarshall = utils.GeneralParams
-		type general map[string]structUnmarshall
+		type structUnmarshal = utils.GeneralParams
+		type general map[string]structUnmarshal
 		var generalConfig general
 
 		// check user home directory and save it into a variable.
@@ -66,7 +66,7 @@ with the command 'letme init remove' or just deleting the .letme-cache manually.
 		type account struct {
 			Id     int      `json:"id"`
 			Name   string   `json:"name"`
-			Role   string   `json:"role"`
+			Role   []string   `json:"role"`
 			Region []string `json:"region"`
 		}
 
@@ -92,33 +92,24 @@ with the command 'letme init remove' or just deleting the .letme-cache manually.
 			ProjectionExpression:      expr.Projection(),
 			TableName:                 aws.String(dynamoDBTable),
 		}
-
-		// once the query is prepared, scan the table name (specified on letme-config) to retrieve the fields and loop through the results
-		scanTable, err := sesAwsDB.Scan(inputs)
-		utils.CheckAndReturnError(err)
-		var exportedID int
-		var exportedName string
-		var exportedRole string
-		var exportedRegion []string
-		for _, i := range scanTable.Items {
-			item := account{}
-			err = dynamodbattribute.UnmarshalMap(i, &item)
-			utils.CheckAndReturnError(err)
-			exportedID = item.Id
-			exportedName = item.Name
-			exportedRole = item.Role
-			exportedRegion = item.Region
-
-		}
-
-		// save the exported variables into a file (.letme-cache) this will improve performance because common queries will be satisified by the cache file
 		cacheFilePath, err := os.Create(homeDir + "/.letme/.letme-cache")
 		utils.CheckAndReturnError(err)
 		defer cacheFilePath.Close()
 		cacheFileWriter := bufio.NewWriter(cacheFilePath)
-		_, err = fmt.Fprintf(cacheFileWriter, "%v,%v,%v,%v\n", exportedID, exportedName, exportedRole, exportedRegion)
+		// once the query is prepared, scan the table name (specified on letme-config) to retrieve the fields and loop through the results
+		scanTable, err := sesAwsDB.Scan(inputs)
 		utils.CheckAndReturnError(err)
-		cacheFileWriter.Flush()
+		for _, i := range scanTable.Items {
+			item := account{}
+			err = dynamodbattribute.UnmarshalMap(i, &item)
+			utils.CheckAndReturnError(err)
+			// save the exported variables into a file (.letme-cache) this will improve performance because common queries will be satisified by the cache file
+			
+			_, err = fmt.Fprintf(cacheFileWriter, "%v", utils.TemplateCacheFile(item.Name, item.Id, item.Role, item.Region ))
+			utils.CheckAndReturnError(err)
+			cacheFileWriter.Flush()
+
+		}
 		fmt.Println("Cache file stored on " + homeDir + "/.letme/.letme-cache")
 
 	},

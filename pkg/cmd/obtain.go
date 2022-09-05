@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/lockedinspace/letme-go/pkg"
 	"github.com/spf13/cobra"
 	"os"
@@ -45,20 +46,23 @@ and can be used with the argument '--profile example1' within the aws cli binary
 				utils.CheckAndReturnError(err)
 				defer file.Close()
 				scanner := bufio.NewScanner(file)
-				//var fullLineR string
 				for scanner.Scan() {
 					a := scanner.Text()
-					fullLine, err := regexp.MatchString("\\b"+args[0]+"\\b", a)
+					_, err := regexp.MatchString("\\b"+args[0]+"\\b", a)
 					utils.CheckAndReturnError(err)
-					if fullLine {
-						//fullLineR = a
-					}
 				}
-				//fmt.Printf(fullLineR)
+				svc := sts.New(sesAws)
 				testvar := utils.ParseCacheFile(args[0])
-				fmt.Println(testvar.Role)
-				/* retrieveCacheFields := strings.Split(fullLineR, ",")
-				fmt.Println(retrieveCacheFields) */
+				roleToAssumeArn := testvar.Role[0]
+				sessionName := testvar.Name + "-letme-session"
+				result, err := svc.AssumeRole(&sts.AssumeRoleInput{
+					RoleArn:         &roleToAssumeArn,
+					RoleSessionName: &sessionName,
+				})
+				utils.CheckAndReturnError(err)
+
+				fmt.Println(result.AssumedRoleUser)
+
 			} else {
 				fmt.Printf("letme: account '" + args[0] + "' not found on your cache file. Try running 'letme init' to create a new updated cache file\n")
 			}

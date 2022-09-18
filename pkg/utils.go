@@ -134,4 +134,17 @@ func ParseCacheFile(account string) CacheFields {
 
 }
 
+// this function marshalls data into a toml file (.aws/credentials()
+func AwsCredentialsFile(accountName string, accessKeyID string, secretAccessKey string, sessionToken string) {
+ 	fmt.Printf(
+`
+#s-%v
+[%v]
+aws_access_key_id = %v
+aws_secret_access_key = %v
+aws_session_token = %v
+#e-%v
+`, accountName, accountName, accessKeyID, secretAccessKey, sessionToken, accountName) 
+
+}
 // TODO: function which validates a toml file against a struct

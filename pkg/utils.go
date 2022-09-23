@@ -116,6 +116,13 @@ func CacheFileRead() string {
 	return s
 }
 
+// this function reads the aws creds file
+func AwsCredsFileRead() string {
+	readCacheFile, err := ioutil.ReadFile(GetHomeDirectory() + "/.aws/credentials")
+	CheckAndReturnError(err)
+	s := string(readCacheFile)
+	return s
+}
 // this function maps data on the cache file into a struct
 func ParseCacheFile(account string) CacheFields {
 	type o = CacheFields
@@ -135,16 +142,16 @@ func ParseCacheFile(account string) CacheFields {
 }
 
 // this function marshalls data into a toml file (.aws/credentials()
-func AwsCredentialsFile(accountName string, accessKeyID string, secretAccessKey string, sessionToken string) {
- 	fmt.Printf(
-`
-#s-%v
+func AwsCredentialsFile(accountName string, accessKeyID string, secretAccessKey string, sessionToken string) string {
+	return fmt.Sprintf(
+		`#s-%v
 [%v]
 aws_access_key_id = %v
 aws_secret_access_key = %v
 aws_session_token = %v
 #e-%v
-`, accountName, accountName, accessKeyID, secretAccessKey, sessionToken, accountName) 
+`, accountName, accountName, accessKeyID, secretAccessKey, sessionToken, accountName)
 
 }
+
 // TODO: function which validates a toml file against a struct

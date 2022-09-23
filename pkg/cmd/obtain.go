@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"regexp"
+	"strings"
 )
 
 var obtainCmd = &cobra.Command{
@@ -60,29 +61,48 @@ and can be used with the argument '--profile example1' within the aws cli binary
 					RoleSessionName: &sessionName,
 				})
 				utils.CheckAndReturnError(err)
-				
+
 				var creds credentials.Value
 				creds.AccessKeyID = *result.Credentials.AccessKeyId
 				creds.SecretAccessKey = *result.Credentials.SecretAccessKey
 				creds.SessionToken = *result.Credentials.SessionToken
-				//utils.AwsCredentialsFile(testvar.Name, creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken)
 				if _, err := os.Stat(utils.GetHomeDirectory() + "/.aws/credentials"); err == nil {
-					f, err := os.OpenFile(utils.GetHomeDirectory() + "/.aws/credentials", os.O_APPEND|os.O_WRONLY, 0600)
-					utils.CheckAndReturnError(err)
-
-						
-
-						 if _, err = f.WriteString(utils.AwsCredentialsFile(testvar.Name, creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken)); err != nil {
+					str := "#s-" + testvar.Name
+					etr := "#e-" + testvar.Name
+					s := utils.AwsCredsFileRead()
+					if strings.Contains(s, str) && strings.Contains(s, etr) {
+						fmt.Println("It is already present, replacing...")
+						startIndex := strings.Index(s, str)
+						stopIndex := strings.Index(s, etr) + len(etr)
+						res := s[:startIndex] + s[stopIndex:]
+						res = strings.ReplaceAll(res, "\n\n", "\n")
+						f, err := os.OpenFile(utils.GetHomeDirectory() + "/.aws/credentials", os.O_RDWR|os.O_TRUNC, 0600)
+						utils.CheckAndReturnError(err)
+						fmt.Fprintf(f, "%v", res)
+						if _, err = f.WriteString(utils.AwsCredentialsFile(testvar.Name, creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken)); err != nil {
 							utils.CheckAndReturnError(err)
 							defer f.Close()
-						} 
+						}
+					} else {
+						fmt.Println("It is not present, creating...")
+						f, err := os.OpenFile(utils.GetHomeDirectory() + "/.aws/credentials", os.O_APPEND|os.O_WRONLY, 0600)
+						utils.CheckAndReturnError(err)
+						if _, err = f.WriteString(utils.AwsCredentialsFile(testvar.Name, creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken)); err != nil {
+							utils.CheckAndReturnError(err)
+							defer f.Close()
+						}
+					}
+
+					
+
 				} else {
-					fmt.Println("letme: Could not locate any aws credentials file.")
+					fmt.Println("letme: Could not locate '$HOME/.aws/credentials' file.")
 					os.Exit(1)
 				}
 
 			} else {
 				fmt.Printf("letme: account '" + args[0] + "' not found on your cache file. Try running 'letme init' to create a new updated cache file\n")
+				os.Exit(1)
 			}
 		}
 

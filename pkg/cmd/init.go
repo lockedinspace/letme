@@ -18,7 +18,7 @@ import (
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Create a cache to speed up response times",
-	Long: `Creates a cache file on the $HOME directory.
+	Long: `Creates a cache file in the users $HOME directory.
 IDs, account names, roles to be assumed and regions will be present on the cache file. 
 This will improve performance because common queries will be satisified by the cache file and will not
 be routed to the DynamoDB service from AWS. 

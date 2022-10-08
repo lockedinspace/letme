@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
+	"strings"
 )
 
 // struct to unmarshal toml (will be modified as new options are demanded)
@@ -116,13 +117,22 @@ func CacheFileRead() string {
 	return s
 }
 
-// this function reads the aws creds file
+// this function reads the aws credentials file
 func AwsCredsFileRead() string {
 	readCacheFile, err := ioutil.ReadFile(GetHomeDirectory() + "/.aws/credentials")
 	CheckAndReturnError(err)
 	s := string(readCacheFile)
 	return s
 }
+
+// this function reads the aws config file
+func AwsConfigFileRead() string {
+	readCacheFile, err := ioutil.ReadFile(GetHomeDirectory() + "/.aws/config")
+	CheckAndReturnError(err)
+	s := string(readCacheFile)
+	return s
+}
+
 // this function maps data on the cache file into a struct
 func ParseCacheFile(account string) CacheFields {
 	type o = CacheFields
@@ -141,7 +151,7 @@ func ParseCacheFile(account string) CacheFields {
 
 }
 
-// this function marshalls data into a toml file (.aws/credentials()
+// this function marshalls data into a file
 func AwsCredentialsFile(accountName string, accessKeyID string, secretAccessKey string, sessionToken string) string {
 	return fmt.Sprintf(
 		`#s-%v
@@ -152,6 +162,33 @@ aws_session_token = %v
 #e-%v
 `, accountName, accountName, accessKeyID, secretAccessKey, sessionToken, accountName)
 
+}
+
+// this function marshalls data into a file
+func AwsConfigFile(accountName string, region string) string {
+	return fmt.Sprintf(
+		`#s-%v
+[profile %v]
+region = %v
+output = json
+#e-%v
+`, accountName, accountName, region, accountName)
+
+}
+
+// this function replaces within a file the block of text which matches the accountName input variable
+func AwsReplaceBlock(file string, accountName string) string {
+	str := "#s-" + accountName
+	etr := "#e-" + accountName
+	empty := ""
+	if strings.Contains(file, str) && strings.Contains(file, etr) {
+		startIndex := strings.Index(file, str)
+		stopIndex := strings.Index(file, etr) + len(etr)
+		res := file[:startIndex] + file[stopIndex:]
+		res = strings.ReplaceAll(res, "\n\n", "\n")
+		return res
+	}
+	return empty
 }
 
 // TODO: function which validates a toml file against a struct

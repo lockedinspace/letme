@@ -1,7 +1,7 @@
 {
  "id": 123456789,
  "name": "example1",
- "description": "this is a skeleton for an aws account named example1 which will be assumed through the iam role accountswitch.",
+ "description": "This is a skeleton for an aws account named example1 which will be assumed through an IAM Role (or a chained IAM role list).",
  "region": [
   "eu-west-1",
   "eu-central-1"

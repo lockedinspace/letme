@@ -151,7 +151,7 @@ func ParseCacheFile(account string) CacheFields {
 
 }
 
-// this function marshalls data into a file
+// this function marshalls data into a toml file
 func AwsCredentialsFile(accountName string, accessKeyID string, secretAccessKey string, sessionToken string) string {
 	return fmt.Sprintf(
 		`#s-%v

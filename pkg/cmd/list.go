@@ -26,7 +26,7 @@ var listCmd = &cobra.Command{
 		}
 	},
 	Short: "List accounts",
-	Long: `List all the accounts specified in the DynamoDB table.`,
+	Long: `List all the accounts specified in the DynamoDB table or in your cache file.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		profile := utils.ConfigFileResultString("Aws_source_profile")
 		region := utils.ConfigFileResultString("Aws_source_profile_region")
@@ -51,7 +51,7 @@ var listCmd = &cobra.Command{
 			var allitems general
 		    _, err := toml.DecodeFile(utils.GetHomeDirectory()+"/.letme/.letme-cache", &allitems)
 			utils.CheckAndReturnError(err)
-			w := tabwriter.NewWriter(os.Stdout, 20, 200, 1, ' ', 0)
+			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)
 			fmt.Fprintln(w, "NAME:\tMAIN REGION:")
 			fmt.Fprintln(w, "-----\t------------")
 			for _, items := range allitems {
@@ -80,7 +80,7 @@ var listCmd = &cobra.Command{
 				Role   []string `json:"role"`
 				Region []string `json:"region"`
 			}
-			w := tabwriter.NewWriter(os.Stdout, 20, 200, 1, ' ', 0)
+			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)
 			fmt.Fprintln(w, "NAME:\tMAIN REGION:")
 			fmt.Fprintln(w, "-----\t------------")
 			for _, i := range scanTable.Items {

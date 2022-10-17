@@ -140,7 +140,8 @@ and can be used with the argument '--profile example1' within the aws cli binary
 
 			sesAwsDB := dynamodb.New(sesAws)
 			proj := expression.NamesList(expression.Name("id"), expression.Name("name"), expression.Name("role"), expression.Name("region"))
-			expr, err := expression.NewBuilder().WithProjection(proj).Build()
+			filt := expression.Name("name").Equal(expression.Value(args[0]))
+			expr, err := expression.NewBuilder().WithFilter(filt).WithProjection(proj).Build()
 			utils.CheckAndReturnError(err)
 			inputs := &dynamodb.ScanInput{
 				ExpressionAttributeNames:  expr.Names(),

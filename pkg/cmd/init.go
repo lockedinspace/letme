@@ -116,5 +116,8 @@ with the command 'letme init remove' or just deleting the .letme-cache manually.
 }
 
 func init() {
+	var Remove bool
 	rootCmd.AddCommand(initCmd)
+	configFileCmd.Flags().BoolVarP(&Remove, "remove", "r", false, "remove init file")
+
 }

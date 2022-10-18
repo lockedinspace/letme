@@ -28,8 +28,8 @@ var obtainCmd = &cobra.Command{
 		}
 	},
 	Short: "Obtain aws credentials",
-	Long: `Through the AWS Security Token Service, obtain temporal credentials
-once the user successfully authenticates itself. Credentials will last 3600 seconds
+	Long: `Obtains assumed credentials for the account specified.
+Once the user successfully authenticates itself. Credentials will last 3600 seconds
 and can be used with the argument '--profile example1' within the aws cli binary.`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

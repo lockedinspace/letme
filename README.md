@@ -8,3 +8,4 @@ TODO:
 # - remodel init output to user using tabwriter
 # - delete.go to delete an assumed account on your credentials/config files
 # - MFA support
+# - verify for config-file integrity

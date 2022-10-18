@@ -2,8 +2,7 @@ package letme
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
-	"os"
+	"github.com/BurntSushi/toml"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -11,9 +10,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/lockedinspace/letme-go/pkg"
-	"github.com/BurntSushi/toml"
+	"github.com/spf13/cobra"
+	"os"
 	"text/tabwriter"
-
 )
 
 var listCmd = &cobra.Command{
@@ -25,8 +24,9 @@ var listCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
-	Short: "List accounts",
-	Long: `List all the accounts specified in the DynamoDB table or in your cache file.`,
+	Short: "List AWS accounts",
+	Long: `Lists all of the AWS accounts and their main region
+specified in the DynamoDB table or in your cache file.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		profile := utils.ConfigFileResultString("Aws_source_profile")
 		region := utils.ConfigFileResultString("Aws_source_profile_region")
@@ -49,15 +49,15 @@ var listCmd = &cobra.Command{
 				general map[interface{}]accountFields
 			)
 			var allitems general
-		    _, err := toml.DecodeFile(utils.GetHomeDirectory()+"/.letme/.letme-cache", &allitems)
+			_, err := toml.DecodeFile(utils.GetHomeDirectory()+"/.letme/.letme-cache", &allitems)
 			utils.CheckAndReturnError(err)
 			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)
 			fmt.Fprintln(w, "NAME:\tMAIN REGION:")
 			fmt.Fprintln(w, "-----\t------------")
 			for _, items := range allitems {
-				fmt.Fprintln(w, items.Name + "\t" + items.Region[0])
+				fmt.Fprintln(w, items.Name+"\t"+items.Region[0])
 				w.Flush()
-				
+
 			}
 		} else {
 			sesAwsDB := dynamodb.New(sesAws)
@@ -88,7 +88,7 @@ var listCmd = &cobra.Command{
 				err = dynamodbattribute.UnmarshalMap(i, &items)
 				utils.CheckAndReturnError(err)
 				// save the exported variables into a file (.letme-cache) this will improve performance because common queries will be satisified by the cache file
-				fmt.Fprintln(w, items.Name + "\t" + items.Region[0])
+				fmt.Fprintln(w, items.Name+"\t"+items.Region[0])
 				w.Flush()
 			}
 		}

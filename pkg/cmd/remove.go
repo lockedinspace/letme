@@ -1,31 +1,35 @@
 package letme
 
 import (
-	"fmt"
-	"github.com/lockedinspace/letme-go/pkg"
+	//"fmt"
+	//"github.com/lockedinspace/letme-go/pkg"
 	"github.com/spf13/cobra"
-	"os"
+	//"os"
 )
 
 var removeCmd = &cobra.Command{
 	Use:   "remove",
-	Short: "Remove the cache file",
-	Long: `Removes the cache file created by the 'init' command.
-Deleting this file could cause higher waiting times when retrieving information.`,
+	Short: "Remove an account in your local aws files",
+	Long: `Removes the entry referencing the account in the credentials and config files.
+Used for sanitazing purposes and keeping readable and clean files.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// get user home dir and delete the file if exists
-		homeDir := utils.GetHomeDirectory()
-		if _, err := os.Stat(homeDir + "/.letme/.letme-cache"); err == nil {
-			err := os.Remove(homeDir + "/.letme/.letme-cache")
-			utils.CheckAndReturnError(err)
-			fmt.Println("Cache file successfully removed.")
+  		// var then variable name then variable type
+	/* 	var boolean bool
+		boolean = false
+		var mfaToken string
+		// Taking input from user
+		if boolean {
+			fmt.Println("with mfa")
+			mfaToken = "12345"
 		} else {
-			fmt.Println("letme: Could not find nor remove cache file.")
-			os.Exit(1)
-		}
+			fmt.Println("without mfa")
+			mfaToken = ""
+		} */
+		
 	},
 }
 
 func init() {
-	initCmd.AddCommand(removeCmd)
+	//initCmd.AddCommand(removeCmd)
+	rootCmd.AddCommand(removeCmd)
 }

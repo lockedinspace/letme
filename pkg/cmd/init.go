@@ -13,13 +13,27 @@ import (
 	"github.com/lockedinspace/letme-go/pkg"
 	"github.com/spf13/cobra"
 	"os"
+	"text/tabwriter"
 )
 
 var initCmd = &cobra.Command{
-	Use:   "init",
+	Use: "init",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if _, err := os.Stat(utils.GetHomeDirectory() + "/.letme/letme-config"); err == nil {
+		} else {
+			fmt.Println("letme: could not locate any config file. Please run 'letme config-file' to create one.")
+			os.Exit(1)
+		}
+		result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
+		if result {
+		} else {
+			fmt.Println("letme: run 'letme config-file --verify' to obtain a template for your config file.")
+			os.Exit(1)
+		}
+	},
 	Short: "Create a cache to speed up response times",
 	Long: `Creates a cache file in the users $HOME directory.
-IDs, account names, roles to be assumed and regions will be present on the cache file. 
+IDs, account names, roles to be assumed and regions will be present in the cache file. 
 This will improve performance because common queries will be satisified by the cache file and will not
 be routed to the DynamoDB service from AWS. 
 
@@ -27,36 +41,39 @@ If the end user prefers to satisfy all their queries through internet, they can 
 with the command 'letme init remove' or just deleting the .letme-cache manually.
         `,
 	Run: func(cmd *cobra.Command, args []string) {
+		removeFlag, _ := cmd.Flags().GetBool("remove")
+		if removeFlag {
+			if _, err := os.Stat(utils.GetHomeDirectory() + "/.letme/.letme-cache"); err == nil {
+				err := os.Remove(utils.GetHomeDirectory() + "/.letme/.letme-cache")
+				utils.CheckAndReturnError(err)
+				fmt.Println("Cache file successfully removed.")
+				os.Exit(0)
+			} else {
+				fmt.Println("letme: Could not find nor remove cache file.")
+				os.Exit(1)
+			}
+		}
 		// import a struct to unmarshal the letme-config (toml) document.
 		type structUnmarshal = utils.GeneralParams
 		type general map[string]structUnmarshal
 		var generalConfig general
 
-		// check user home directory and save it into a variable.
-		homeDir := utils.GetHomeDirectory()
-		configFilePath := homeDir + "/.letme/letme-config"
-		if _, err := os.Stat(configFilePath); err != nil {
-			fmt.Println("letme: Could not locate any config file. Please run 'letme config-file' to create one.")
-			os.Exit(1)
-		}
-
 		// once letme-config exists decode it and alert the user for any strange key field which is not present on the struct
-		decodedFile, err := toml.DecodeFile(configFilePath, &generalConfig)
+		_, err := toml.DecodeFile(utils.GetHomeDirectory()+"/.letme/letme-config", &generalConfig)
 		utils.CheckAndReturnError(err)
-		oddFields := decodedFile.Undecoded()
-		if len(oddFields) == 0 {
-		} else {
-			fmt.Printf("letme: Unknown key: %q\n", oddFields)
-			os.Exit(1)
-		}
 
 		// parse toml structure and make unmarshalled variables global
 		var exportedProfile string
 		var exportedProfileRegion string
 		var exportedDynamoDBTable string
+		w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)
+		fmt.Println("Creating cache file with the following specs:\n")
+		fmt.Fprintln(w, "PROFILE:\tPROFILE REGION:\tDYNAMODB TABLE:")
+		fmt.Fprintln(w, "--------\t---------------\t---------------")
 		for _, name := range []string{"general"} {
 			a := generalConfig[name]
-			fmt.Printf("\nProfile: %v\nProfile region: %v\n\n", a.Aws_source_profile, a.Aws_source_profile_region)
+			fmt.Fprintln(w, a.Aws_source_profile+"\t"+a.Aws_source_profile_region+"\t"+a.Dynamodb_table+"\n")
+			w.Flush()
 			exportedProfile = a.Aws_source_profile
 			exportedProfileRegion = a.Aws_source_profile_region
 			exportedDynamoDBTable = a.Dynamodb_table
@@ -92,7 +109,7 @@ with the command 'letme init remove' or just deleting the .letme-cache manually.
 			ProjectionExpression:      expr.Projection(),
 			TableName:                 aws.String(dynamoDBTable),
 		}
-		cacheFilePath, err := os.Create(homeDir + "/.letme/.letme-cache")
+		cacheFilePath, err := os.Create(utils.GetHomeDirectory() + "/.letme/.letme-cache")
 		utils.CheckAndReturnError(err)
 		defer cacheFilePath.Close()
 		cacheFileWriter := bufio.NewWriter(cacheFilePath)
@@ -110,7 +127,7 @@ with the command 'letme init remove' or just deleting the .letme-cache manually.
 			cacheFileWriter.Flush()
 
 		}
-		fmt.Println("Cache file stored on " + homeDir + "/.letme/.letme-cache")
+		fmt.Println("Cache file stored on " + utils.GetHomeDirectory() + "/.letme/.letme-cache")
 
 	},
 }
@@ -118,6 +135,6 @@ with the command 'letme init remove' or just deleting the .letme-cache manually.
 func init() {
 	var Remove bool
 	rootCmd.AddCommand(initCmd)
-	configFileCmd.Flags().BoolVarP(&Remove, "remove", "r", false, "remove init file")
+	initCmd.Flags().BoolVarP(&Remove, "remove", "", false, "remove init file")
 
 }

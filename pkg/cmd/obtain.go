@@ -20,10 +20,17 @@ import (
 
 var obtainCmd = &cobra.Command{
 	Use: "obtain",
+	Aliases: []string{"ob"},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		if _, err := os.Stat(utils.GetHomeDirectory() + "/.letme/letme-config"); err == nil {
 		} else {
-			fmt.Println("letme: Could not locate any config file. Please run 'letme config-file' to create one.")
+			fmt.Println("letme: could not locate any config file. Please run 'letme config-file' to create one.")
+			os.Exit(1)
+		}
+		result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
+		if result {
+		} else {
+			fmt.Println("letme: run 'letme config-file --verify' to obtain a template for your config file.")
 			os.Exit(1)
 		}
 	},
@@ -36,6 +43,7 @@ and can be used with the argument '--profile example1' within the aws cli binary
 		profile := utils.ConfigFileResultString("Aws_source_profile")
 		region := utils.ConfigFileResultString("Aws_source_profile_region")
 		table := utils.ConfigFileResultString("Dynamodb_table")
+		serialMfa := utils.ConfigFileResultString("Mfa_arn")
 		sesAws, err := session.NewSession(&aws.Config{
 			Region:      aws.String(region),
 			Credentials: credentials.NewSharedCredentials("", profile),
@@ -60,12 +68,25 @@ and can be used with the argument '--profile example1' within the aws cli binary
 				testvar := utils.ParseCacheFile(args[0])
 				roleToAssumeArn := testvar.Role[0]
 				sessionName := testvar.Name + "-letme-session"
-				result, err := svc.AssumeRole(&sts.AssumeRoleInput{
-					RoleArn:         &roleToAssumeArn,
-					RoleSessionName: &sessionName,
-				})
-				utils.CheckAndReturnError(err)
-
+				var result *sts.AssumeRoleOutput
+				if len(serialMfa) > 0 {
+					fmt.Println("Enter MFA one time pass code: ")
+					var tokenMfa string
+					fmt.Scanln(&tokenMfa)
+					result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+						RoleArn:         &roleToAssumeArn,
+						RoleSessionName: &sessionName,
+						SerialNumber:    &serialMfa,
+						TokenCode:       &tokenMfa,
+					})
+					utils.CheckAndReturnError(err)
+				} else {
+					result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+						RoleArn:         &roleToAssumeArn,
+						RoleSessionName: &sessionName,
+					})
+					utils.CheckAndReturnError(err)
+				}
 				var creds credentials.Value
 				creds.AccessKeyID = *result.Credentials.AccessKeyId
 				creds.SecretAccessKey = *result.Credentials.SecretAccessKey
@@ -169,10 +190,23 @@ and can be used with the argument '--profile example1' within the aws cli binary
 				svc := sts.New(sesAws)
 				sessionName := accountName.(string) + "-letme-session"
 				roleToAssumeArnString := roleToAssumeArn.(string)
-				result, err := svc.AssumeRole(&sts.AssumeRoleInput{
-					RoleArn:         &roleToAssumeArnString,
-					RoleSessionName: &sessionName,
-				})
+				var result *sts.AssumeRoleOutput
+				if len(serialMfa) > 0 {
+					fmt.Println("Enter MFA one time pass code: ")
+					var tokenMfa string
+					fmt.Scanln(&tokenMfa)
+					result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+						RoleArn:         &roleToAssumeArnString,
+						RoleSessionName: &sessionName,
+						SerialNumber:    &serialMfa,
+						TokenCode:       &tokenMfa,
+					})
+				} else {
+					result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+						RoleArn:         &roleToAssumeArnString,
+						RoleSessionName: &sessionName,
+					})
+				}
 				utils.CheckAndReturnError(err)
 				accountName := accountName.(string)
 				accountRegion := accountRegion.(string)

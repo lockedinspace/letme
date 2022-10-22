@@ -3,7 +3,6 @@ package letme
 import (
 	"bufio"
 	"fmt"
-	"github.com/BurntSushi/toml"
 	"github.com/lockedinspace/letme-go/pkg"
 	"github.com/spf13/cobra"
 	"os"
@@ -27,24 +26,18 @@ your values.
 		homeDir := utils.GetHomeDirectory()
 
 		if verifyFlag {
-			type config struct {
-				General struct {
-					Aws_source_profile        string
-					Aws_source_profile_region string `toml:"aws_source_profile_region,omitempty"`
-					Dynamodb_table            string
-					Mfa_arn                   string `toml:"mfa_arn,omitempty"`
-				}
-			}
-			var conf config
-			md, err := toml.DecodeFile((homeDir+"/.letme/" + filepath.Base(fileName)), &conf)
-			utils.CheckAndReturnError(err)
-			if len(md.Undecoded()) > 0 {
-				fmt.Printf("letme: config file is corrupted. Following values might be misspelled:\n")
-				fmt.Println(md.Undecoded())
-				os.Exit(1)
-			} else {
+			result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
+			if result {
 				os.Exit(0)
+			} else {
+				fmt.Printf(
+					`
+letme: config file should have the following structure:
+%v
+`, utils.TemplateConfigFile())
+				os.Exit(1)
 			}
+
 		}
 		// conditional statement which creats either the directory + config file or just the config file if the directory already exists
 		// then writes  the marshalled values on a toml document (letme-config).

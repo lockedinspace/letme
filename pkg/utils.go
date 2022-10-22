@@ -27,6 +27,28 @@ type CacheFields struct {
 	Region []string `toml:"region"`
 }
 
+// this function verifies the config file integrity
+func CheckConfigFile(path string) bool {
+	type config struct {
+		General struct {
+			Aws_source_profile        string
+			Aws_source_profile_region string `toml:"aws_source_profile_region,omitempty"`
+			Dynamodb_table            string
+			Mfa_arn                   string `toml:"mfa_arn,omitempty"`
+		}
+	}
+	var conf config
+	md, err := toml.DecodeFile(path, &conf)
+	CheckAndReturnError(err)
+	if len(md.Undecoded()) > 0 {
+		fmt.Printf("letme: config file is corrupted. Following values might be misspelled:\n")
+		fmt.Printf("* %v \n", md.Undecoded())
+		return false
+	} else {
+		return true
+	}
+}
+
 // this function checks if a command exists
 func CommandExists(command string) {
 	_, err := exec.LookPath(command)
@@ -155,6 +177,7 @@ func ParseCacheFile(account string) CacheFields {
 func AwsCredentialsFile(accountName string, accessKeyID string, secretAccessKey string, sessionToken string) string {
 	return fmt.Sprintf(
 		`#s-%v
+#managed by letme
 [%v]
 aws_access_key_id = %v
 aws_secret_access_key = %v
@@ -168,6 +191,7 @@ aws_session_token = %v
 func AwsConfigFile(accountName string, region string) string {
 	return fmt.Sprintf(
 		`#s-%v
+#managed by letme
 [profile %v]
 region = %v
 output = json

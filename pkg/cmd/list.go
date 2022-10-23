@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
-	"github.com/lockedinspace/letme-go/pkg"
+	"github.com/lockedinspace/letme/pkg"
 	"github.com/spf13/cobra"
 	"os"
 	"text/tabwriter"

@@ -1,4 +1,4 @@
-module github.com/lockedinspace/letme-go
+module github.com/lockedinspace/letme
 
 go 1.19
 

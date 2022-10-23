@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/lockedinspace/letme-go/pkg"
-	"github.com/lockedinspace/letme-go/pkg/cmd"
+	"github.com/lockedinspace/letme/pkg"
+	"github.com/lockedinspace/letme/pkg/cmd"
 )
 
 func main() {

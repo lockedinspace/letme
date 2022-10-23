@@ -3,7 +3,7 @@ package letme
 import (
 	"bufio"
 	"fmt"
-	"github.com/lockedinspace/letme-go/pkg"
+	"github.com/lockedinspace/letme/pkg"
 	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"

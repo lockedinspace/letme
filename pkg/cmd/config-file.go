@@ -18,13 +18,13 @@ to perform aws calls. Once created, you will need to manually edit that file and
 your values.
         `,
 	Run: func(cmd *cobra.Command, args []string) {
-		// grab and define force flag
+		// grab and define force flag & verify flags
 		forceFlag, _ := cmd.Flags().GetBool("force")
 		verifyFlag, _ := cmd.Flags().GetBool("verify")
 		// define file name and grab user home directory
 		fileName := "letme-config"
 		homeDir := utils.GetHomeDirectory()
-
+		// if verify flag is passed, verify the letme-config file
 		if verifyFlag {
 			result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
 			if result {
@@ -39,7 +39,7 @@ letme: config file should have the following structure:
 			}
 
 		}
-		// conditional statement which creats either the directory + config file or just the config file if the directory already exists
+		// creates the directory + config file or just the config file if the directory already exists
 		// then writes  the marshalled values on a toml document (letme-config).
 		if _, err := os.Stat(homeDir + "/.letme/"); err != nil {
 			err = os.Mkdir(homeDir+"/.letme/", 0700)

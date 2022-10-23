@@ -32,15 +32,13 @@ var initCmd = &cobra.Command{
 		}
 	},
 	Short: "Create a cache to speed up response times",
-	Long: `Creates a cache file in the users $HOME directory.
+	Long: `Creates a cache file in the users home directory.
 IDs, account names, roles to be assumed and regions will be present in the cache file. 
-This will improve performance because common queries will be satisified by the cache file and will not
-be routed to the DynamoDB service from AWS. 
-
-If the end user prefers to satisfy all their queries through internet, they can remove the cache file
-with the command 'letme init remove' or just deleting the .letme-cache manually.
+This will improve performance as common queries will be satisified by the cache file and will not
+be routed to the DynamoDB service. 
         `,
 	Run: func(cmd *cobra.Command, args []string) {
+		// if remove flag is passed, remove cache file
 		removeFlag, _ := cmd.Flags().GetBool("remove")
 		if removeFlag {
 			if _, err := os.Stat(utils.GetHomeDirectory() + "/.letme/.letme-cache"); err == nil {

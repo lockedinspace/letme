@@ -19,7 +19,7 @@ import (
 )
 
 var obtainCmd = &cobra.Command{
-	Use: "obtain",
+	Use:     "obtain",
 	Aliases: []string{"ob"},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		if _, err := os.Stat(utils.GetHomeDirectory() + "/.letme/letme-config"); err == nil {

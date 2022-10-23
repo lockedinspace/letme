@@ -28,6 +28,7 @@ var listCmd = &cobra.Command{
 	Long: `Lists all of the AWS accounts and their main region
 specified in the DynamoDB table or in your cache file.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// grab fields from config file
 		profile := utils.ConfigFileResultString("Aws_source_profile")
 		region := utils.ConfigFileResultString("Aws_source_profile_region")
 		table := utils.ConfigFileResultString("Dynamodb_table")
@@ -38,6 +39,7 @@ specified in the DynamoDB table or in your cache file.`,
 		utils.CheckAndReturnError(err)
 		_, err = sesAws.Config.Credentials.Get()
 		utils.CheckAndReturnError(err)
+		// if cache file exists, work on that file, either go all against dynamodb service
 		if utils.CacheFileExists() {
 			type (
 				accountFields struct {

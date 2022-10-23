@@ -1,6 +1,7 @@
-# letme
-[![Go Report Card](https://goreportcard.com/badge/github.com/lockedinspace/letme-go)](https://goreportcard.com/report/github.com/lockedinspace/letme-go)
+# letme [![Go Report Card](https://goreportcard.com/badge/github.com/lockedinspace/letme-go)](https://goreportcard.com/report/github.com/lockedinspace/letme-go)
 
+## Requirements
+- Go (recommended 1.19) installed in your system.
 ## What letme achieves
 letme is a tool to obtain AWS credentials from another account without tampering your OS. 
 It only requires a central AWS account with a DynamoDB table to store all of the other accounts information.
@@ -24,3 +25,7 @@ What this software does not achieve is:
 There are two possible scenarios, either you just want to install letme or you need to set up the aws infrastructure required. 
 
 ### Installing letme
+Install letme with the command ``go install github.com/lockedinspace/letme-go@latest``. Go will automatically install it in your ``$GOPATH/bin`` directory which should be in your ``$PATH``.
+
+### Installing letme from source
+If you wish to install letme by source, clone the repository and build the executable with ``go build -o letme``. Afterwards, you must place the binary into your ``$PATH``.

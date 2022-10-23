@@ -25,7 +25,7 @@ What this software does not achieve is:
 There are two possible scenarios, either you just want to install letme or you need to set up the aws infrastructure required. 
 
 ### Installing letme
-Install letme with the command ``go install github.com/lockedinspace/letme-go@latest``. Go will automatically install it in your ``$GOPATH/bin`` directory which should be in your ``$PATH``.
+Install letme with the command ``go install github.com/lockedinspace/letme@latest``. Go will automatically install it in your ``$GOPATH/bin`` directory which should be in your ``$PATH``.
 
 ### Installing letme from source
 If you wish to install letme by source, clone the repository and build the executable with ``go build -o letme``. Afterwards, you must place the binary into your ``$PATH``.

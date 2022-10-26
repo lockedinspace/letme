@@ -8,7 +8,7 @@ import (
 	"text/tabwriter"
 )
 
-var version = "0.1.0"
+var version = "0.1.2"
 var rootCmd = &cobra.Command{
 	Use:     "letme",
 	Short:   "Obtain AWS credentials from another account",

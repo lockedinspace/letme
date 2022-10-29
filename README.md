@@ -1,7 +1,7 @@
 # letme [![Go Report Card](https://goreportcard.com/badge/github.com/lockedinspace/letme-go)](https://goreportcard.com/report/github.com/lockedinspace/letme-go) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![GoDoc reference example](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/lockedinspace/letme)
 
 ## Requirements
-- Go (recommended 1.19) installed in your system.
+- Go (recommended 1.19 or >= 1.15) installed in your system.
 ## What letme achieves
 letme is a tool to obtain AWS credentials from another account without tampering your OS. 
 It only requires a central AWS account with a DynamoDB table to store all of the other accounts information.

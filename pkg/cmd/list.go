@@ -63,7 +63,6 @@ specified in the DynamoDB table or in your cache file.`,
 			}
 
 			sort.Strings(sorted)
-			fmt.Println(sorted)
 			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)
 			fmt.Fprintln(w, "NAME:\tMAIN REGION:")
 			fmt.Fprintln(w, "-----\t------------")
@@ -102,7 +101,6 @@ specified in the DynamoDB table or in your cache file.`,
 
 			}
 			sort.Strings(sorted)
-			fmt.Println(sorted)
 			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)
 			fmt.Fprintln(w, "NAME:\tMAIN REGION:")
 			fmt.Fprintln(w, "-----\t------------")

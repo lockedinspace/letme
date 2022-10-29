@@ -12,6 +12,7 @@ import (
 	"github.com/lockedinspace/letme/pkg"
 	"github.com/spf13/cobra"
 	"os"
+	"sort"
 	"text/tabwriter"
 )
 
@@ -48,16 +49,27 @@ specified in the DynamoDB table or in your cache file.`,
 					Region []string `toml:"region"`
 					Role   []string `toml:"role"`
 				}
-				general map[interface{}]accountFields
+				general map[string]accountFields
 			)
+			
 			var allitems general
+			sorted := make([]string, 0, len(allitems))
 			_, err := toml.DecodeFile(utils.GetHomeDirectory()+"/.letme/.letme-cache", &allitems)
-			utils.CheckAndReturnError(err)
-			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)
-			fmt.Fprintln(w, "NAME:\tMAIN REGION:")
+			utils.CheckAndReturnError(err)  
+			
+			 
+			for _, value := range allitems {
+				sorted = append(sorted, value.Name + "\t" + value.Region[0] )
+
+			}
+			
+			sort.Strings(sorted)
+			fmt.Println(sorted)
+			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0) 
+			fmt.Fprintln(w, "NAME:\tMAIN REGION:") 
 			fmt.Fprintln(w, "-----\t------------")
-			for _, items := range allitems {
-				fmt.Fprintln(w, items.Name+"\t"+items.Region[0])
+			for _, id := range sorted {
+				fmt.Fprintln(w, id)
 				w.Flush()
 
 			}
@@ -82,17 +94,24 @@ specified in the DynamoDB table or in your cache file.`,
 				Role   []string `json:"role"`
 				Region []string `json:"region"`
 			}
-			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)
-			fmt.Fprintln(w, "NAME:\tMAIN REGION:")
-			fmt.Fprintln(w, "-----\t------------")
-			for _, i := range scanTable.Items {
+			sorted := make([]string, 0, len(scanTable.Items))
+			for _, value := range scanTable.Items {
 				items := account{}
-				err = dynamodbattribute.UnmarshalMap(i, &items)
+				err = dynamodbattribute.UnmarshalMap(value, &items)
 				utils.CheckAndReturnError(err)
-				// save the exported variables into a file (.letme-cache) this will improve performance because common queries will be satisified by the cache file
-				fmt.Fprintln(w, items.Name+"\t"+items.Region[0])
-				w.Flush()
+				sorted = append(sorted, items.Name + "\t" + items.Region[0] )
+
 			}
+			sort.Strings(sorted)
+			fmt.Println(sorted)
+		 	w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0) 
+			fmt.Fprintln(w, "NAME:\tMAIN REGION:") 
+			fmt.Fprintln(w, "-----\t------------")
+			for _, id := range sorted {
+				fmt.Fprintln(w, id)
+				w.Flush()
+
+			} 
 		}
 	},
 }

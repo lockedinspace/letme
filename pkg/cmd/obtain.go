@@ -43,6 +43,13 @@ and can be used with the argument '--profile example1' within the aws cli binary
 		profile := utils.ConfigFileResultString("Aws_source_profile")
 		region := utils.ConfigFileResultString("Aws_source_profile_region")
 		table := utils.ConfigFileResultString("Dynamodb_table")
+		sessionName := utils.ConfigFileResultString("Session_name")
+		if len(sessionName) == 0 {
+			fmt.Println("Using default session name: " + args[0] + "-letme-session")
+			sessionName = args[0] + "-letme-session"
+		} else {
+			fmt.Println("Assuming role with the following session name: " + sessionName)
+		}
 		serialMfa := utils.ConfigFileResultString("Mfa_arn")
 		sesAws, err := session.NewSession(&aws.Config{
 			Region:      aws.String(region),
@@ -67,7 +74,6 @@ and can be used with the argument '--profile example1' within the aws cli binary
 				svc := sts.New(sesAws)
 				testvar := utils.ParseCacheFile(args[0])
 				roleToAssumeArn := testvar.Role[0]
-				sessionName := testvar.Name + "-letme-session"
 				var result *sts.AssumeRoleOutput
 				if len(serialMfa) > 0 {
 					fmt.Println("Enter MFA one time pass code: ")
@@ -188,7 +194,6 @@ and can be used with the argument '--profile example1' within the aws cli binary
 			}
 			if accountName == args[0] {
 				svc := sts.New(sesAws)
-				sessionName := accountName.(string) + "-letme-session"
 				roleToAssumeArnString := roleToAssumeArn.(string)
 				var result *sts.AssumeRoleOutput
 				if len(serialMfa) > 0 {

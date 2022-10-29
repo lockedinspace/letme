@@ -8,10 +8,10 @@ import (
 	"text/tabwriter"
 )
 
-var version = "0.1.2"
+var version = "0.1.3"
 var rootCmd = &cobra.Command{
-	Use:     "letme",
-	Short:   "Obtain AWS credentials from another account",
+	Use:   "letme",
+	Short: "Obtain AWS credentials from another account",
 	Long: `letme will query the DynamoDB table or cache file for the specified account and
 load the temporal credentials onto your aws files.
 	`,
@@ -25,7 +25,8 @@ load the temporal credentials onto your aws files.
 		os.Exit(0)
 	},
 }
-func getVersions() (string) {
+
+func getVersions() string {
 	w := tabwriter.NewWriter(os.Stdout, 20, 20, 10, ' ', 0)
 	fmt.Fprintln(w, "CURRENT VERSION:")
 	fmt.Fprintln(w, "---------------")
@@ -37,9 +38,10 @@ func init() {
 	var Version bool
 	rootCmd.PersistentFlags().BoolVarP(&Version, "version", "v", false, "list current, development and latest versions for letme")
 }
+
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
-	
+
 }

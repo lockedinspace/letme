@@ -51,22 +51,21 @@ specified in the DynamoDB table or in your cache file.`,
 				}
 				general map[string]accountFields
 			)
-			
+
 			var allitems general
 			sorted := make([]string, 0, len(allitems))
 			_, err := toml.DecodeFile(utils.GetHomeDirectory()+"/.letme/.letme-cache", &allitems)
-			utils.CheckAndReturnError(err)  
-			
-			 
+			utils.CheckAndReturnError(err)
+
 			for _, value := range allitems {
-				sorted = append(sorted, value.Name + "\t" + value.Region[0] )
+				sorted = append(sorted, value.Name+"\t"+value.Region[0])
 
 			}
-			
+
 			sort.Strings(sorted)
 			fmt.Println(sorted)
-			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0) 
-			fmt.Fprintln(w, "NAME:\tMAIN REGION:") 
+			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)
+			fmt.Fprintln(w, "NAME:\tMAIN REGION:")
 			fmt.Fprintln(w, "-----\t------------")
 			for _, id := range sorted {
 				fmt.Fprintln(w, id)
@@ -99,19 +98,19 @@ specified in the DynamoDB table or in your cache file.`,
 				items := account{}
 				err = dynamodbattribute.UnmarshalMap(value, &items)
 				utils.CheckAndReturnError(err)
-				sorted = append(sorted, items.Name + "\t" + items.Region[0] )
+				sorted = append(sorted, items.Name+"\t"+items.Region[0])
 
 			}
 			sort.Strings(sorted)
 			fmt.Println(sorted)
-		 	w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0) 
-			fmt.Fprintln(w, "NAME:\tMAIN REGION:") 
+			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)
+			fmt.Fprintln(w, "NAME:\tMAIN REGION:")
 			fmt.Fprintln(w, "-----\t------------")
 			for _, id := range sorted {
 				fmt.Fprintln(w, id)
 				w.Flush()
 
-			} 
+			}
 		}
 	},
 }

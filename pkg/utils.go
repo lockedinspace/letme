@@ -36,7 +36,7 @@ func CheckConfigFile(path string) bool {
 			Aws_source_profile_region string `toml:"aws_source_profile_region,omitempty"`
 			Dynamodb_table            string
 			Mfa_arn                   string `toml:"mfa_arn,omitempty"`
-			Session_name			  string 
+			Session_name              string
 		}
 	}
 	var conf config

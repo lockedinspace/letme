@@ -65,7 +65,7 @@ Where:
 If you want to start using letme under your organization, you must deploy one DynamoDB table under the "source account" which will be the one
 hosting the whole central database for your organization. 
 
-Take a look at the following simplified diagram and understand why a DynamoDB table is required in order to provide a central and reliable source of trust amongst all of your organization.
+Take a look at the following simplified diagram and understand why a DynamoDB table is required in order to provide a central and reliable source of trust amongst all of your organization peers.
 
 ![N|Solid](docs/letme.png)
 

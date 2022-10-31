@@ -77,7 +77,7 @@ If the specified keys ``aws_source_profile`` , ``aws_source_profile_region``  an
 
 If the DynamoDB table contains an item entry for example1 with the following [json structure](https://github.com/lockedinspace/letme/blob/main/docs/dynamodb_structure.json), letme will grab the first role from the role list. If the destination account needs to be chained through multiple roles, specify them in order (the latest role to be assumed should be on the lastest position of the json role list)
 
-Once letme gets the role to assume, it requests some AWS STS temporary credentials. Note that the request will always come from the account which holds the profile ``aws_source_profile`` and it will use the region ``aws_source_profile_region`` to locate the table name specified in ``dynamodb_table`` (image step 2 - without MFA).
+Once letme gets the role to assume, it requests some AWS STS temporary credentials. Note that the request will always come from the account which holds the profile ``aws_source_profile`` and it will use the region ``aws_source_profile_region`` to locate the table name specified in ``dynamodb_table`` (image step 2).
 
 If the role that is being assumed has a trust relationship specifying a Multi Factor Authentication, which looks like 
 ```
@@ -87,5 +87,7 @@ If the role that is being assumed has a trust relationship specifying a Multi Fa
   }
 }
 ```
-You will need to set the ``mfa_arn`` to your mfa device associated with ``aws_source_profile``, afterwards, letme will ask you to provide the mfa token. If token is valid, you will get the new credentials written or overwritten  (if they already exist from a previous ``letme obtain`` call) (image step 2 - with MFA)  and you will be able to call resources (image step 3) from that AWS account (image step 4).
+You will need to set the ``mfa_arn`` to your mfa device associated with ``aws_source_profile``, afterwards, letme will ask you to provide the mfa token. If token is valid, you will get the new credentials written or overwritten  (if they already exist from a previous ``letme obtain`` call) (image step 2)  and you will be able to call resources (image step 3) from that AWS account (image step 4).
 
+If you wish to work locally you must run ``letme init`` which will create a toml file containing all of the accounts in your DynamoDB table, this will speed up response times and save you some extra billing from AWS. The downside is that you will be working with a copy, so if changes are made into the DynamoDB, you will need to rerun ``letme init`` in order to get an updated copy.
+It is recommended to run ``letme init`` before obtaining credentials.

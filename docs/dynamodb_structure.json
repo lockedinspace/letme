@@ -7,8 +7,8 @@
   "eu-central-1"
  ],
  "role": [
-  "arn:aws:iam::123456789012:role/service-role/QuickSightAction",
-  "arn:aws:iam::123456789012:role/application_abc/component_xyz/RDSAccess",
-  "arn:aws:iam::123456789012:role/aws-service-role/access-analyzer.amazonaws.com/AWSServiceRoleForAccessAnalyzer"
+  "arn:aws:iam::123456789012:role/accessAccountFOO",
+  "arn:aws:iam::012987654321:role/accessAccountBARfromFOO",
+  "arn:aws:iam::876391057139:role/accessAccountBAZfromBAR"
  ]
 }

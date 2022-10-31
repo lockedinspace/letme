@@ -75,7 +75,7 @@ Here's a more detailed workflow of how letme works behind the scenes:
 When the user tries to obtain access to example1's account, it must pass the security parameters that you specify [more info](#what-it-is-not). Once the initial security parameters are met, letme will read the parameters specified in the config file and try to authenticate against AWS (image step 1). 
 If the specified keys ``aws_source_profile`` , ``aws_source_profile_region``  and ``dynamodb_table`` correspond to an existing DynamoDB table, letme will try to get information about the account  (e.g. example1). 
 
-If the DynamoDB table contains an item entry for example1 with the following [json structure](#docs/dynamodb_structure.json), letme will grab the first role from the role list. If the destination account needs to be chained through multiple roles, specify them in order (the latest role to be assumed should be on the lastest position of the json role list)
+If the DynamoDB table contains an item entry for example1 with the following [json structure](#/letme/blob/main/docs/dynamodb_structure.json), letme will grab the first role from the role list. If the destination account needs to be chained through multiple roles, specify them in order (the latest role to be assumed should be on the lastest position of the json role list)
 
 Once letme gets the role to assume, it requests some AWS STS temporary credentials. Note that the request will always come from the account which holds the profile ``aws_source_profile`` and it will use the region ``aws_source_profile_region`` to locate the table name specified in ``dynamodb_table`` (image step 2 - without MFA).
 

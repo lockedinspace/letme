@@ -49,7 +49,7 @@ Where:
 | Key | Description | Default value | Required | Type |
 | ------ | ------ | ------ | ------ | ------ |
 | ``aws_source_profile`` | The source AWS profile name which stores the credentials from the source account. The source account stores the DynamoDB table as well as being the principal which the AWS assumed account accepts  [1] | ``default`` | No | ``string`` |
-| ``aws_source_profile_region`` | The region name on the source account where the DynamoDB table is located at [2] | ``-`` | Yes | ``string`` |
+| ``aws_source_profile_region`` | The region name on the source account where the DynamoDB table is located [2] | ``-`` | Yes | ``string`` |
 | ``dynamodb_table`` | The table name where the AWS accounts (name, role arns, regions, etc.) are stored | ``-`` | Yes | ``string`` |
 | ``mfa_arn`` | The AWS MFA device arn where you will use to authenticate with a multi factor application [3]  | ``-`` | No (depending on your AWS trust relationship policy) | ``string`` |
 | ``session_name`` | The session name which letme will use when assuming a role from another account | ``${account_name}-letme-session`` | No | ``string`` |

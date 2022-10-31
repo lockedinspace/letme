@@ -89,5 +89,5 @@ If the role that is being assumed has a trust relationship specifying a Multi Fa
 ```
 You will need to set the ``mfa_arn`` to your mfa device associated with ``aws_source_profile``, afterwards, letme will ask you to provide the mfa token. If token is valid, you will get the new credentials written or overwritten  (if they already exist from a previous ``letme obtain`` call) (image step 2)  and you will be able to call resources (image step 3) from that AWS account (image step 4).
 
-If you wish to work locally you must run ``letme init`` which will create a toml file containing all of the accounts in your DynamoDB table, this will speed up response times and save you some extra billing from AWS. The downside is that you will be working with a copy, so if changes are made into the DynamoDB, you will need to rerun ``letme init`` in order to get an updated copy.
+If you wish to work with a local copy you must run ``letme init`` which will create a toml file containing all of the accounts in your DynamoDB table. This will speed up response times and save you some extra billing from AWS. The downside is that you will be working with a copy, so if changes are made into the DynamoDB, you will need to rerun ``letme init`` in order to get an updated copy.
 It is recommended to run ``letme init`` before obtaining credentials.

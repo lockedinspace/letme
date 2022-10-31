@@ -81,11 +81,11 @@ Once letme gets the role to assume, it requests some AWS STS temporary credentia
 
 If the role that is being assumed has a trust relationship specifying a Multi Factor Authentication, which looks like 
 ```
-    "Condition": {
-        "BoolIfExists": { 
-          "aws:MultiFactorAuthPresent" : "true" 
-		  }
-    }
+"Condition": {
+    "BoolIfExists": { 
+      "aws:MultiFactorAuthPresent" : "true" 
+  }
+}
 ```
 You will need to set the ``mfa_arn`` to your mfa device associated with ``aws_source_profile``, afterwards, letme will ask you to provide the mfa token. If token is valid, you will get the new credentials written or overwritten  (if they already exist from a previous ``letme obtain`` call) (image step 2 - with MFA)  and you will be able to call resources (image step 3) from that AWS account (image step 4).
 

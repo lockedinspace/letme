@@ -42,6 +42,9 @@ You will use a configuration file where values such as MFA device arn, DynamoDB 
   mfa_arn = "arn:aws:iam::123456789012:mfa/user001"
   session_name = "user001-with-letme"
 ```
+
+Run ``letme config-file`` to generate your empty template.
+
 Where:
 | Key | Description | Default value | Required | Type |
 | ------ | ------ | ------ | ------ | ------ |

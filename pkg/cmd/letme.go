@@ -3,12 +3,11 @@ package letme
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	//"github.com/lockedinspace/letme/pkg"
 	"os"
 	"text/tabwriter"
 )
 
-var version = "0.1.4"
+var version = "0.1.5"
 var rootCmd = &cobra.Command{
 	Use:   "letme",
 	Short: "Obtain AWS credentials from another account",

@@ -24,15 +24,24 @@ var listCmd = &cobra.Command{
 			fmt.Println("letme: Could not locate any config file. Please run 'letme config-file' to create one.")
 			os.Exit(1)
 		}
+		result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
+		if result {
+		} else {
+			fmt.Println("letme: run 'letme config-file --verify' to obtain a template for your config file.")
+			os.Exit(1)
+		}
 	},
 	Short: "List AWS accounts",
 	Long: `Lists all of the AWS accounts and their main region
 specified in the DynamoDB table or in your cache file.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// grab fields from config file
+
+		// grab and save fields from the config file into variables
 		profile := utils.ConfigFileResultString("Aws_source_profile")
 		region := utils.ConfigFileResultString("Aws_source_profile_region")
 		table := utils.ConfigFileResultString("Dynamodb_table")
+
+		// create a new aws session and try to get credentials
 		sesAws, err := session.NewSession(&aws.Config{
 			Region:      aws.String(region),
 			Credentials: credentials.NewSharedCredentials("", profile),
@@ -40,8 +49,11 @@ specified in the DynamoDB table or in your cache file.`,
 		utils.CheckAndReturnError(err)
 		_, err = sesAws.Config.Credentials.Get()
 		utils.CheckAndReturnError(err)
-		// if cache file exists, work on that file, either go all against dynamodb service
+
+		// check if the .letme-cache file exists, if not, queries must be satisfied through internet
 		if utils.CacheFileExists() {
+
+			// create a struct and a map to iterate over them
 			type (
 				accountFields struct {
 					Id     int      `toml:"id"`
@@ -51,17 +63,19 @@ specified in the DynamoDB table or in your cache file.`,
 				}
 				general map[string]accountFields
 			)
-
 			var allitems general
+
+			// generate a slice which will contain sorted elements
 			sorted := make([]string, 0, len(allitems))
+
+			// decode the toml file and append the elements into the sorted array
 			_, err := toml.DecodeFile(utils.GetHomeDirectory()+"/.letme/.letme-cache", &allitems)
 			utils.CheckAndReturnError(err)
-
 			for _, value := range allitems {
 				sorted = append(sorted, value.Name+"\t"+value.Region[0])
-
 			}
 
+			// sort the slice and using a tabwriter print a nicely formed output
 			sort.Strings(sorted)
 			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)
 			fmt.Fprintln(w, "NAME:\tMAIN REGION:")
@@ -69,13 +83,15 @@ specified in the DynamoDB table or in your cache file.`,
 			for _, id := range sorted {
 				fmt.Fprintln(w, id)
 				w.Flush()
-
 			}
 		} else {
+			// create a new dynamodb session and prepare a query
 			sesAwsDB := dynamodb.New(sesAws)
 			proj := expression.NamesList(expression.Name("name"), expression.Name("region"))
 			expr, err := expression.NewBuilder().WithProjection(proj).Build()
 			utils.CheckAndReturnError(err)
+
+			// scan the results from the previous query
 			inputs := &dynamodb.ScanInput{
 				ExpressionAttributeNames:  expr.Names(),
 				ExpressionAttributeValues: expr.Values(),
@@ -83,9 +99,10 @@ specified in the DynamoDB table or in your cache file.`,
 				ProjectionExpression:      expr.Projection(),
 				TableName:                 aws.String(table),
 			}
-			// once the query is prepared, scan the table name (specified on letme-config) to retrieve the fields and loop through the results
 			scanTable, err := sesAwsDB.Scan(inputs)
 			utils.CheckAndReturnError(err)
+
+			// create a struct to match the data and create a new slice to sort data later
 			type account struct {
 				Id     int      `json:"id"`
 				Name   string   `json:"name"`
@@ -93,13 +110,16 @@ specified in the DynamoDB table or in your cache file.`,
 				Region []string `json:"region"`
 			}
 			sorted := make([]string, 0, len(scanTable.Items))
+
+			// loop through the results and append the results into the slice
 			for _, value := range scanTable.Items {
 				items := account{}
 				err = dynamodbattribute.UnmarshalMap(value, &items)
 				utils.CheckAndReturnError(err)
 				sorted = append(sorted, items.Name+"\t"+items.Region[0])
-
 			}
+
+			// sort the slice and using a tabwriter print a nicely formed output
 			sort.Strings(sorted)
 			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)
 			fmt.Fprintln(w, "NAME:\tMAIN REGION:")
@@ -107,7 +127,6 @@ specified in the DynamoDB table or in your cache file.`,
 			for _, id := range sorted {
 				fmt.Fprintln(w, id)
 				w.Flush()
-
 			}
 		}
 	},

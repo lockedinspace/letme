@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-// struct to unmarshal toml (will be modified as new options are demanded)
+// struct which represents the config-file toml keys
 type GeneralParams struct {
 	Aws_source_profile        string
 	Aws_source_profile_region string `toml:"aws_source_profile_region,omitempty"`
@@ -20,7 +20,7 @@ type GeneralParams struct {
 	Session_name              string
 }
 
-// struct to parse cache data
+// struct which represents the cache file toml keys
 type CacheFields struct {
 	Id     int      `toml:"id"`
 	Name   string   `toml:"name"`
@@ -28,7 +28,7 @@ type CacheFields struct {
 	Region []string `toml:"region"`
 }
 
-// this function verifies the config file integrity
+// verify config-file integrity
 func CheckConfigFile(path string) bool {
 	type config struct {
 		General struct {
@@ -51,13 +51,13 @@ func CheckConfigFile(path string) bool {
 	}
 }
 
-// this function checks if a command exists
+// check if a command exists on the host machine
 func CommandExists(command string) {
 	_, err := exec.LookPath(command)
 	CheckAndReturnError(err)
 }
 
-// this function checks the error, if the error contains a message, stop the execution and show the error to the user
+// checks the error, if the error contains a message, stop the execution and show the error to the user
 func CheckAndReturnError(err error) {
 	if err != nil {
 		fmt.Println(err)
@@ -65,7 +65,7 @@ func CheckAndReturnError(err error) {
 	}
 }
 
-// this function marshalls data into a toml file (letme-config)
+// marshalls data into a toml file (config-file)
 func TemplateConfigFile() string {
 	var (
 		buf = new(bytes.Buffer)
@@ -83,7 +83,7 @@ func TemplateConfigFile() string {
 	return buf.String()
 }
 
-// this function marshalls data into a toml file (.letme-cache)
+// marshalls data into a toml file (.letme-cache)
 func TemplateCacheFile(accountName string, accountID int, accountRole []string, accountRegion []string) string {
 	var (
 		buf = new(bytes.Buffer)
@@ -100,17 +100,17 @@ func TemplateCacheFile(accountName string, accountID int, accountRole []string, 
 	return buf.String()
 }
 
-// this function returns the caller $HOME directory
+// gets user's $HOME directory
 func GetHomeDirectory() string {
 	homeDir, err := os.UserHomeDir()
 	CheckAndReturnError(err)
 	return homeDir
 }
 
-// this function parsers the struct and returns one field (string only) at a time
+// parses letme-config file and returns one field at a time
 func ConfigFileResultString(field string) string {
-	type structUnmarshall = GeneralParams
-	type general map[string]structUnmarshall
+	type structUnmarshal = GeneralParams
+	type general map[string]structUnmarshal
 	var generalConfig general
 	_, err := toml.DecodeFile(GetHomeDirectory()+"/.letme/letme-config", &generalConfig)
 	CheckAndReturnError(err)
@@ -125,7 +125,7 @@ func ConfigFileResultString(field string) string {
 	return exportedField
 }
 
-// this function checks if a cache file exists
+// checks if a cache file exists
 func CacheFileExists() bool {
 	if _, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-cache"); err == nil {
 		return true
@@ -134,7 +134,7 @@ func CacheFileExists() bool {
 	}
 }
 
-// this function reads the cache file
+// reads the cache file
 func CacheFileRead() string {
 	readCacheFile, err := ioutil.ReadFile(GetHomeDirectory() + "/.letme/.letme-cache")
 	CheckAndReturnError(err)
@@ -142,7 +142,7 @@ func CacheFileRead() string {
 	return s
 }
 
-// this function reads the aws credentials file
+// reads the aws credentials file
 func AwsCredsFileRead() string {
 	readCacheFile, err := ioutil.ReadFile(GetHomeDirectory() + "/.aws/credentials")
 	CheckAndReturnError(err)
@@ -150,7 +150,7 @@ func AwsCredsFileRead() string {
 	return s
 }
 
-// this function reads the aws config file
+// reads the aws config file
 func AwsConfigFileRead() string {
 	readCacheFile, err := ioutil.ReadFile(GetHomeDirectory() + "/.aws/config")
 	CheckAndReturnError(err)
@@ -158,7 +158,7 @@ func AwsConfigFileRead() string {
 	return s
 }
 
-// this function maps data on the cache file into a struct
+// maps data from the cache file into a struct
 func ParseCacheFile(account string) CacheFields {
 	type o = CacheFields
 	type general map[string]o
@@ -169,14 +169,9 @@ func ParseCacheFile(account string) CacheFields {
 	CheckAndReturnError(err)
 	s := generalConfig[account]
 	return s
-	/* for _, name := range []string{account} {
-		s := generalConfig[name]
-		fmt.Printf(s.Name)
-	} */
-
 }
 
-// this function marshalls data into a toml file
+// marshalls data into a string
 func AwsCredentialsFile(accountName string, accessKeyID string, secretAccessKey string, sessionToken string) string {
 	return fmt.Sprintf(
 		`#s-%v
@@ -187,10 +182,9 @@ aws_secret_access_key = %v
 aws_session_token = %v
 #e-%v
 `, accountName, accountName, accessKeyID, secretAccessKey, sessionToken, accountName)
-
 }
 
-// this function marshalls data into a file
+// marshalls data into a string
 func AwsConfigFile(accountName string, region string) string {
 	return fmt.Sprintf(
 		`#s-%v
@@ -200,10 +194,9 @@ region = %v
 output = json
 #e-%v
 `, accountName, accountName, region, accountName)
-
 }
 
-// this function replaces within a file the block of text which matches the accountName input variable
+// removes from a file all text in between two strings
 func AwsReplaceBlock(file string, accountName string) string {
 	str := "#s-" + accountName
 	etr := "#e-" + accountName
@@ -217,5 +210,3 @@ func AwsReplaceBlock(file string, accountName string) string {
 	}
 	return empty
 }
-
-// TODO: function which validates a toml file against a struct

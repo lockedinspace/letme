@@ -19,11 +19,6 @@ import (
 var initCmd = &cobra.Command{
 	Use: "init",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		if _, err := os.Stat(utils.GetHomeDirectory() + "/.letme/letme-config"); err == nil {
-		} else {
-			fmt.Println("letme: could not locate any config file. Please run 'letme config-file' to create one.")
-			os.Exit(1)
-		}
 		result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
 		if result {
 		} else {

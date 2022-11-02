@@ -52,7 +52,7 @@ Where:
 | ``aws_source_profile_region`` | The region name in the source account where the DynamoDB table is located [2] | ``-`` | Yes | ``string`` |
 | ``dynamodb_table`` | The DynamoDB table name where the AWS accounts are stored [3] | ``-`` | Yes | ``string`` |
 | ``mfa_arn`` | The AWS MFA device arn used to authenticate against AWS [4]  | ``-`` | No (depending on your AWS trust relationship policy) | ``string`` |
-| ``session_name`` | The session name which letme used when assuming a role from another account | ``${account_name}-letme-session`` | No | ``string`` |
+| ``session_name`` | The session name which letme uses when assuming a role from another account | ``${account_name}-letme-session`` | No | ``string`` |
 
 [1] -> https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html
 

@@ -58,7 +58,7 @@ Where:
 
 [2] -> https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
 
-[3] -> Check json item structure for the DynamoDB table: thhttps://github.com/lockedinspace/letme/blob/main/docs/dynamodb_structure.json
+[3] -> Check json item structure for the DynamoDB table: https://github.com/lockedinspace/letme/blob/main/docs/dynamodb_structure.json
 
 [4] -> https://docs.aws.amazon.com/cli/latest/reference/iam/list-mfa-devices.html
 

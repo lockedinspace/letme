@@ -48,7 +48,7 @@ Run ``letme config-file`` to generate your empty template.
 Where:
 | Key | Description | Default value | Required | Type |
 | ------ | ------ | ------ | ------ | ------ |
-| ``aws_source_profile`` | The profile name which stores the source account credentials. This account helds the DynamoDB table as well as being the IAM principal from which the AWS assumed account accepts assume role requests [1] | ``default`` | No | ``string`` |
+| ``aws_source_profile`` | The profile name which stores the source account credentials. This account helds the DynamoDB table as well as being the IAM principal from which the AWS assumed account accepts [1] | ``default`` | No | ``string`` |
 | ``aws_source_profile_region`` | The region name in the source account where the DynamoDB table is located [2] | ``-`` | Yes | ``string`` |
 | ``dynamodb_table`` | The DynamoDB table name where the AWS accounts are stored [3] | ``-`` | Yes | ``string`` |
 | ``mfa_arn`` | The AWS MFA device arn used to authenticate against AWS [4]  | ``-`` | No (depending on your AWS trust relationship policy) | ``string`` |

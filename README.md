@@ -48,17 +48,19 @@ Run ``letme config-file`` to generate your empty template.
 Where:
 | Key | Description | Default value | Required | Type |
 | ------ | ------ | ------ | ------ | ------ |
-| ``aws_source_profile`` | The source AWS profile name which stores the credentials from the source account. The source account stores the DynamoDB table as well as being the principal which the AWS assumed account accepts  [1] | ``default`` | No | ``string`` |
-| ``aws_source_profile_region`` | The region name on the source account where the DynamoDB table is located [2] | ``-`` | Yes | ``string`` |
-| ``dynamodb_table`` | The table name where the AWS accounts (name, role arns, regions, etc.) are stored | ``-`` | Yes | ``string`` |
-| ``mfa_arn`` | The AWS MFA device arn where you will use to authenticate against AWS [3]  | ``-`` | No (depending on your AWS trust relationship policy) | ``string`` |
-| ``session_name`` | The session name which letme will use when assuming a role from another account | ``${account_name}-letme-session`` | No | ``string`` |
+| ``aws_source_profile`` | The source AWS profile name which stores the source account credentials. This account helds the DynamoDB table as well as being the IAM principal from which the AWS assumed account accepts assume role requests [1] | ``default`` | No | ``string`` |
+| ``aws_source_profile_region`` | The region name in the source account where the DynamoDB table is located [2] | ``-`` | Yes | ``string`` |
+| ``dynamodb_table`` | The DynamoDB table name where the AWS accounts are stored [3] | ``-`` | Yes | ``string`` |
+| ``mfa_arn`` | The AWS MFA device arn used to authenticate against AWS [4]  | ``-`` | No (depending on your AWS trust relationship policy) | ``string`` |
+| ``session_name`` | The session name which letme used when assuming a role from another account | ``${account_name}-letme-session`` | No | ``string`` |
 
 [1] -> https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html
 
 [2] -> https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
 
-[3] -> https://docs.aws.amazon.com/cli/latest/reference/iam/list-mfa-devices.html
+[3] -> Check json item structure for the DynamoDB table: thhttps://github.com/lockedinspace/letme/blob/main/docs/dynamodb_structure.json
+
+[4] -> https://docs.aws.amazon.com/cli/latest/reference/iam/list-mfa-devices.html
 
 ### Setting up the AWS infrastructure required by letme
 

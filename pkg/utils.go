@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"reflect"
 	"strings"
+	"regexp"
 )
 
 // struct which represents the config-file toml keys
@@ -209,4 +210,20 @@ func AwsReplaceBlock(file string, accountName string) string {
 		return res
 	}
 	return empty
+}
+
+// check if an account is present on the local aws credentials/config files
+func CheckAccountLocally(account string) string {
+	accountCredExists, err := regexp.MatchString("(?sm)#s-"+account+"$.*?#e-"+account+"$", AwsCredsFileRead())
+	CheckAndReturnError(err)
+	accountConfExists, err := regexp.MatchString("(?sm)#s-"+account+"$.*?#e-"+account+"$", AwsConfigFileRead())
+	CheckAndReturnError(err)
+	if accountCredExists && accountConfExists {
+		return fmt.Sprintf("%t,%t", accountCredExists, accountConfExists)
+	} else if !(accountCredExists) && accountConfExists {
+		return fmt.Sprintf("%t,%t", accountCredExists, accountConfExists)
+	} else if accountCredExists && !(accountConfExists) {
+		return fmt.Sprintf("%t,%t", accountCredExists, accountConfExists)
+	}
+	return ""
 }

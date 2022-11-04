@@ -59,7 +59,7 @@ be routed to the DynamoDB service.
 		var exportedProfile string
 		var exportedProfileRegion string
 		var exportedDynamoDBTable string
-		w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)
+		w := tabwriter.NewWriter(os.Stdout, 10, 200, 10, ' ', 0)
 		fmt.Println("Creating cache file with the following specs:\n")
 		fmt.Fprintln(w, "PROFILE:\tPROFILE REGION:\tDYNAMODB TABLE:")
 		fmt.Fprintln(w, "--------\t---------------\t---------------")

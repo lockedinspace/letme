@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/BurntSushi/toml"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -68,9 +69,28 @@ and can be used with the argument '--profile example1' within the aws cli binary
 		// check if the .letme-cache file exists, if not, queries must be satisfied through internet
 		if utils.CacheFileExists() {
 
+			// create a struct and a map to iterate over them
+			type (
+				accountFields struct {
+					Id     int      `toml:"id"`
+					Name   string   `toml:"name"`
+					Region []string `toml:"region"`
+					Role   []string `toml:"role"`
+				}
+				general map[interface{}]accountFields
+			)
+			var allitems general
 			// save into a variable the name of the client parsed from the cache file and check if exists
-			accountExists, err := regexp.MatchString("\\b"+args[0]+"\\b", utils.CacheFileRead())
+			_, err := toml.DecodeFile(utils.GetHomeDirectory()+"/.letme/.letme-cache", &allitems)
 			utils.CheckAndReturnError(err)
+			var accountExists bool
+			for _, value := range allitems {
+				if value.Name == args[0] {
+					accountExists = true
+				}
+			}
+		    
+			//accountExists, err := regexp.MatchString("\\b"+args[0]+"\\b", utils.CacheFileRead())
 			if accountExists {
 
 				// open the .letme-cache file and scan through their lines

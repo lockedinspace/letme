@@ -35,12 +35,11 @@ var listCmd = &cobra.Command{
 	Long: `Lists all of the AWS accounts and their main region
 specified in the DynamoDB table or in your cache file.`,
 	Run: func(cmd *cobra.Command, args []string) {
-
+		localFlag, _ := cmd.Flags().GetBool("local")
 		// grab and save fields from the config file into variables
 		profile := utils.ConfigFileResultString("Aws_source_profile")
 		region := utils.ConfigFileResultString("Aws_source_profile_region")
 		table := utils.ConfigFileResultString("Dynamodb_table")
-
 		// create a new aws session and try to get credentials
 		sesAws, err := session.NewSession(&aws.Config{
 			Region:      aws.String(region),
@@ -68,18 +67,29 @@ specified in the DynamoDB table or in your cache file.`,
 			// generate a slice which will contain sorted elements
 			sorted := make([]string, 0, len(allitems))
 
-			// decode the toml file and append the elements into the sorted array
+			// decode the toml file and append the elements into the sorted array also checkinf if the local flag is passed
 			_, err := toml.DecodeFile(utils.GetHomeDirectory()+"/.letme/.letme-cache", &allitems)
 			utils.CheckAndReturnError(err)
-			for _, value := range allitems {
-				sorted = append(sorted, value.Name+"\t"+value.Region[0])
+			if localFlag {
+				for _, value := range allitems {
+					sorted = append(sorted, value.Name+"\t"+value.Region[0]+"\t"+utils.CheckAccountLocally(value.Name))
+				}
+			} else {
+				for _, value := range allitems {
+					sorted = append(sorted, value.Name+"\t"+value.Region[0])
+				}
 			}
-
+			
 			// sort the slice and using a tabwriter print a nicely formed output
 			sort.Strings(sorted)
-			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)
-			fmt.Fprintln(w, "NAME:\tMAIN REGION:")
-			fmt.Fprintln(w, "-----\t------------")
+			w := tabwriter.NewWriter(os.Stdout, 35, 200, 1, ' ', 0)
+			if localFlag {
+				fmt.Fprintln(w, "NAME:\tMAIN REGION:\tLOCAL STATUS (credentials,config):")
+				fmt.Fprintln(w, "-----\t------------\t----------------------------------")
+			} else {
+				fmt.Fprintln(w, "NAME:\tMAIN REGION:")
+				fmt.Fprintln(w, "-----\t------------")
+			}
 			for _, id := range sorted {
 				fmt.Fprintln(w, id)
 				w.Flush()
@@ -112,18 +122,33 @@ specified in the DynamoDB table or in your cache file.`,
 			sorted := make([]string, 0, len(scanTable.Items))
 
 			// loop through the results and append the results into the slice
-			for _, value := range scanTable.Items {
+			if localFlag {
+				for _, value := range scanTable.Items {
+					items := account{}
+					err = dynamodbattribute.UnmarshalMap(value, &items)
+					utils.CheckAndReturnError(err)
+					sorted = append(sorted, items.Name+"\t"+items.Region[0]+"\t"+utils.CheckAccountLocally(items.Name))
+				}
+			} else {
+				for _, value := range scanTable.Items {
 				items := account{}
 				err = dynamodbattribute.UnmarshalMap(value, &items)
 				utils.CheckAndReturnError(err)
 				sorted = append(sorted, items.Name+"\t"+items.Region[0])
+				}
 			}
+			
 
 			// sort the slice and using a tabwriter print a nicely formed output
 			sort.Strings(sorted)
-			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)
-			fmt.Fprintln(w, "NAME:\tMAIN REGION:")
-			fmt.Fprintln(w, "-----\t------------")
+			w := tabwriter.NewWriter(os.Stdout, 35, 200, 1, ' ', 0)
+			if localFlag {
+				fmt.Fprintln(w, "NAME:\tMAIN REGION:\tLOCAL STATUS (credentials,config):")
+				fmt.Fprintln(w, "-----\t------------\t----------------------------------")
+			} else {
+				fmt.Fprintln(w, "NAME:\tMAIN REGION:")
+				fmt.Fprintln(w, "-----\t------------")
+			}
 			for _, id := range sorted {
 				fmt.Fprintln(w, id)
 				w.Flush()
@@ -133,5 +158,7 @@ specified in the DynamoDB table or in your cache file.`,
 }
 
 func init() {
+	var local bool
 	rootCmd.AddCommand(listCmd)
+	listCmd.Flags().BoolVarP(&local, "local", "l", false, "lists local accounts and their respective status")
 }

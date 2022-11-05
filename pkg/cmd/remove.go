@@ -34,12 +34,12 @@ and '$HOME/.aws/config' files.
 			confFile2, err := os.OpenFile(utils.GetHomeDirectory()+"/.aws/config", os.O_RDWR|os.O_TRUNC, 0600)
 			utils.CheckAndReturnError(err)
 			fmt.Fprintf(confFile2, "%v", utils.AwsReplaceBlock(f, args[0]))
-			fmt.Println("Removing profile '" + args[0] + "' entry from config file.")
+			fmt.Println("Removed profile '" + args[0] + "' entry from config file.")
 		} else if utils.CheckAccountLocally(args[0]) == "true,false" {
 			credFile2, err := os.OpenFile(utils.GetHomeDirectory()+"/.aws/credentials", os.O_RDWR|os.O_TRUNC, 0600)
 			utils.CheckAndReturnError(err)
 			fmt.Fprintf(credFile2, "%v", utils.AwsReplaceBlock(s, args[0]))
-			fmt.Println("Removing profile '" + args[0] + "' entry from credentials file.")
+			fmt.Println("Removed profile '" + args[0] + "' entry from credentials file.")
 		} else {
 			fmt.Println("letme: unable to remove profile '" + args[0] + "', not found on your local aws files")
 			os.Exit(1)

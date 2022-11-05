@@ -67,7 +67,7 @@ specified in the DynamoDB table or in your cache file.`,
 			// generate a slice which will contain sorted elements
 			sorted := make([]string, 0, len(allitems))
 
-			// decode the toml file and append the elements into the sorted array also checkinf if the local flag is passed
+			// decode the toml file and append the elements into the sorted array also check if the local flag is passed
 			_, err := toml.DecodeFile(utils.GetHomeDirectory()+"/.letme/.letme-cache", &allitems)
 			utils.CheckAndReturnError(err)
 			if localFlag {

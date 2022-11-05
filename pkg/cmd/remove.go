@@ -1,11 +1,11 @@
 package letme
 
 import (
-	"github.com/spf13/cobra"
 	"errors"
-	"github.com/lockedinspace/letme/pkg"
-	"os"
 	"fmt"
+	"github.com/lockedinspace/letme/pkg"
+	"github.com/spf13/cobra"
+	"os"
 )
 
 var removeCmd = &cobra.Command{
@@ -18,8 +18,12 @@ and '$HOME/.aws/config' files.
 	`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+
+		// read both awscredentials and config files
 		s := utils.AwsCredsFileRead()
 		f := utils.AwsConfigFileRead()
+
+		// open both files and check if there's any error opening them, if not, delete entries based on what's existing
 		_, errCred := os.OpenFile(utils.GetHomeDirectory()+"/.aws/credentials", os.O_RDWR|os.O_APPEND, 0600)
 		_, errConf := os.OpenFile(utils.GetHomeDirectory()+"/.aws/config", os.O_RDWR|os.O_APPEND, 0600)
 		if !(errors.Is(errCred, os.ErrNotExist)) && !(errors.Is(errConf, os.ErrNotExist)) && utils.CheckAccountLocally(args[0]) == "true,true" {
@@ -44,11 +48,9 @@ and '$HOME/.aws/config' files.
 			fmt.Println("letme: unable to remove profile '" + args[0] + "', not found on your local aws files")
 			os.Exit(1)
 		}
-		
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(removeCmd)
-
 }

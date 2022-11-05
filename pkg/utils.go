@@ -8,8 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
-	"strings"
 	"regexp"
+	"strings"
 )
 
 // struct which represents the config-file toml keys

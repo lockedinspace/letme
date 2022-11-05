@@ -79,7 +79,7 @@ specified in the DynamoDB table or in your cache file.`,
 					sorted = append(sorted, value.Name+"\t"+value.Region[0])
 				}
 			}
-			
+
 			// sort the slice and using a tabwriter print a nicely formed output
 			sort.Strings(sorted)
 			w := tabwriter.NewWriter(os.Stdout, 35, 200, 1, ' ', 0)
@@ -131,13 +131,12 @@ specified in the DynamoDB table or in your cache file.`,
 				}
 			} else {
 				for _, value := range scanTable.Items {
-				items := account{}
-				err = dynamodbattribute.UnmarshalMap(value, &items)
-				utils.CheckAndReturnError(err)
-				sorted = append(sorted, items.Name+"\t"+items.Region[0])
+					items := account{}
+					err = dynamodbattribute.UnmarshalMap(value, &items)
+					utils.CheckAndReturnError(err)
+					sorted = append(sorted, items.Name+"\t"+items.Region[0])
 				}
 			}
-			
 
 			// sort the slice and using a tabwriter print a nicely formed output
 			sort.Strings(sorted)

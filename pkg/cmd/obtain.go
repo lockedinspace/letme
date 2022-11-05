@@ -80,6 +80,7 @@ and can be used with the argument '--profile example1' within the aws cli binary
 				general map[interface{}]accountFields
 			)
 			var allitems general
+
 			// save into a variable the name of the client parsed from the cache file and check if exists
 			_, err := toml.DecodeFile(utils.GetHomeDirectory()+"/.letme/.letme-cache", &allitems)
 			utils.CheckAndReturnError(err)
@@ -89,8 +90,7 @@ and can be used with the argument '--profile example1' within the aws cli binary
 					accountExists = true
 				}
 			}
-		    
-			//accountExists, err := regexp.MatchString("\\b"+args[0]+"\\b", utils.CacheFileRead())
+
 			if accountExists {
 
 				// open the .letme-cache file and scan through their lines

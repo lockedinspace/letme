@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // struct which represents the config-file toml keys
@@ -174,15 +175,17 @@ func ParseCacheFile(account string) CacheFields {
 
 // marshalls data into a string
 func AwsCredentialsFile(accountName string, accessKeyID string, secretAccessKey string, sessionToken string) string {
+	now := time.Now()
+	a := now.Format("Jan 2, 2006 15:04:05")
 	return fmt.Sprintf(
 		`#s-%v
-#managed by letme
+#%v;t
 [%v]
 aws_access_key_id = %v
 aws_secret_access_key = %v
 aws_session_token = %v
 #e-%v
-`, accountName, accountName, accessKeyID, secretAccessKey, sessionToken, accountName)
+`, accountName, a, accountName, accessKeyID, secretAccessKey, sessionToken, accountName)
 }
 
 // marshalls data into a string
@@ -210,6 +213,29 @@ func AwsReplaceBlock(file string, accountName string) string {
 		return res
 	}
 	return empty
+}
+
+// returns only the text entry which statisfies the accountName
+func AwsSingleReplaceBlock(file string, accountName string) string {
+	str := "#s-" + accountName
+	etr := "#e-" + accountName
+	empty := ""
+	if strings.Contains(file, str) && strings.Contains(file, etr) {
+		startIndex := strings.Index(file, str)
+		stopIndex := strings.Index(file, etr) + len(etr)
+		res := file[startIndex:stopIndex]
+		res = strings.ReplaceAll(res, "\n\n", "\n")
+		return res
+	}
+	return empty
+}
+
+// return the latest requested time from a block of text
+func GetLatestRequestedTime(content string) string {
+	pat := regexp.MustCompile(`#.*\;t`)
+	s := pat.FindString(content)
+	out := strings.TrimLeft(strings.TrimRight(s, ";t"), "#")
+	return out
 }
 
 // check if an account is present on the local aws credentials/config files

@@ -66,6 +66,31 @@ and can be used with the argument '--profile example1' within the aws cli binary
 		_, err = sesAws.Config.Credentials.Get()
 		utils.CheckAndReturnError(err)
 
+		// check if the requested account is already found in the aws files
+		if len(utils.CheckAccountLocally(args[0])) == 0 {
+			resultCred, err := regexp.MatchString("\\["+args[0]+"]", utils.AwsCredsFileRead())
+			utils.CheckAndReturnError(err)
+			resultConfig, err := regexp.MatchString("\\[profile "+args[0]+"]", utils.AwsConfigFileRead())
+			utils.CheckAndReturnError(err)
+			if resultCred && resultConfig {
+				fmt.Println("letme: account '" + args[0] + "' is already present under your aws files and it is not managed by letme.")
+				fmt.Println("letme: this will cause duplicate entries hence parsing errors.")
+				fmt.Println("letme: no changes were made.")
+				os.Exit(1)
+			} else if resultCred {
+				fmt.Println("letme: account '" + args[0] + "' is already present under your aws credentials file and it is not managed by letme.")
+				fmt.Println("letme: this will cause duplicate entries hence parsing errors.")
+				fmt.Println("letme: no changes were made.")
+				os.Exit(1)
+			} else if resultConfig {
+				fmt.Println("letme: account '" + args[0] + "' is already present under your aws config file and it is not managed by letme.")
+				fmt.Println("letme: this will cause duplicate entries hence parsing errors.")
+				fmt.Println("letme: no changes were made.")
+				os.Exit(1)
+			}
+
+		}
+
 		// check if the .letme-cache file exists, if not, queries must be satisfied through internet
 		if utils.CacheFileExists() {
 
@@ -92,8 +117,6 @@ and can be used with the argument '--profile example1' within the aws cli binary
 			}
 
 			if accountExists {
-
-				// open the .letme-cache file and scan through their lines
 				file, err := os.Open(utils.GetHomeDirectory() + "/.letme/.letme-cache")
 				utils.CheckAndReturnError(err)
 				defer file.Close()
@@ -111,7 +134,7 @@ and can be used with the argument '--profile example1' within the aws cli binary
 
 				// save into a variable the assume role output and check if mfa authentication is enabled
 				var result *sts.AssumeRoleOutput
-				if len(serialMfa) > 0 {
+				if len(serialMfa) > 0 && len(account.Role) == 1 {
 					fmt.Println("Enter MFA one time pass code: ")
 					var tokenMfa string
 					fmt.Scanln(&tokenMfa)
@@ -122,6 +145,51 @@ and can be used with the argument '--profile example1' within the aws cli binary
 						TokenCode:       &tokenMfa,
 					})
 					utils.CheckAndReturnError(err)
+
+				} else if len(account.Role) > 1 {
+
+					// check if account has more than one role, if true, start hopping between roles
+					fmt.Println("More than one role detected. Total hops:", len(account.Role))
+					var creds credentials.Value
+					for i := 0; i < len(account.Role); i++ {
+						fmt.Printf("[%v/%v] ", i+1, len(account.Role))
+						fmt.Println(account.Role[i])
+						if i == 0 && len(serialMfa) > 0 {
+							fmt.Println("Enter MFA one time pass code: ")
+							var tokenMfa string
+							fmt.Scanln(&tokenMfa)
+							result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+								RoleArn:         &account.Role[i],
+								RoleSessionName: &sessionName,
+								SerialNumber:    &serialMfa,
+								TokenCode:       &tokenMfa,
+							})
+							utils.CheckAndReturnError(err)
+							creds.AccessKeyID = *result.Credentials.AccessKeyId
+							creds.SecretAccessKey = *result.Credentials.SecretAccessKey
+							creds.SessionToken = *result.Credentials.SessionToken
+						} else if i == 0 {
+							result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+								RoleArn:         &account.Role[i],
+								RoleSessionName: &sessionName,
+							})
+							utils.CheckAndReturnError(err)
+							creds.AccessKeyID = *result.Credentials.AccessKeyId
+							creds.SecretAccessKey = *result.Credentials.SecretAccessKey
+							creds.SessionToken = *result.Credentials.SessionToken
+						} else {
+							chainAws, err := session.NewSession(&aws.Config{
+								Credentials: credentials.NewStaticCredentials(creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken),
+							})
+							utils.CheckAndReturnError(err)
+							svcChain := sts.New(chainAws)
+							result, err = svcChain.AssumeRole(&sts.AssumeRoleInput{
+								RoleArn:         &account.Role[i],
+								RoleSessionName: &sessionName,
+							})
+							utils.CheckAndReturnError(err)
+						}
+					}
 				} else {
 					result, err = svc.AssumeRole(&sts.AssumeRoleInput{
 						RoleArn:         &roleToAssumeArn,
@@ -228,36 +296,91 @@ and can be used with the argument '--profile example1' within the aws cli binary
 			scanTable, err := sesAwsDB.Scan(inputs)
 			utils.CheckAndReturnError(err)
 			var accountName interface{}
-			var roleToAssumeArn interface{}
+			var roleToAssumeArn []string
+			var singleRoleToAssumeArn string
 			var accountRegion interface{}
 			for _, i := range scanTable.Items {
 				item := account{}
 				err = dynamodbattribute.UnmarshalMap(i, &item)
 				utils.CheckAndReturnError(err)
-				accountName = item.Name
-				roleToAssumeArn = item.Role[0]
-				accountRegion = item.Region[0]
+				if len(item.Role) > 1 {
+					accountName = item.Name
+					roleToAssumeArn = item.Role
+					accountRegion = item.Region[0]
+				} else {
+					accountName = item.Name
+					singleRoleToAssumeArn = item.Role[0]
+					accountRegion = item.Region[0]
+				}
 			}
+
 			// check if the account is the same as the provided by the user
 			if accountName == args[0] {
 				svc := sts.New(sesAws)
-				roleToAssumeArnString := roleToAssumeArn.(string)
 				var result *sts.AssumeRoleOutput
+				var tempCreds credentials.Value
 
 				// check if mfa authentication is enabled
-				if len(serialMfa) > 0 {
-					fmt.Println("Enter MFA one time pass code: ")
-					var tokenMfa string
-					fmt.Scanln(&tokenMfa)
-					result, err = svc.AssumeRole(&sts.AssumeRoleInput{
-						RoleArn:         &roleToAssumeArnString,
-						RoleSessionName: &sessionName,
-						SerialNumber:    &serialMfa,
-						TokenCode:       &tokenMfa,
-					})
+				if len(serialMfa) > 0 && len(roleToAssumeArn) > 1 {
+					for i := 0; i < len(roleToAssumeArn); i++ {
+						fmt.Printf("[%v/%v] ", i+1, len(roleToAssumeArn))
+						fmt.Println(roleToAssumeArn[i])
+						if i == 0 {
+							fmt.Println("Enter MFA one time pass code: ")
+							var tokenMfa string
+							fmt.Scanln(&tokenMfa)
+							result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+								RoleArn:         &roleToAssumeArn[i],
+								RoleSessionName: &sessionName,
+								SerialNumber:    &serialMfa,
+								TokenCode:       &tokenMfa,
+							})
+							utils.CheckAndReturnError(err)
+							tempCreds.AccessKeyID = *result.Credentials.AccessKeyId
+							tempCreds.SecretAccessKey = *result.Credentials.SecretAccessKey
+							tempCreds.SessionToken = *result.Credentials.SessionToken
+						} else {
+							chainAws, err := session.NewSession(&aws.Config{
+								Credentials: credentials.NewStaticCredentials(tempCreds.AccessKeyID, tempCreds.SecretAccessKey, tempCreds.SessionToken),
+							})
+							utils.CheckAndReturnError(err)
+							svcChain := sts.New(chainAws)
+							result, err = svcChain.AssumeRole(&sts.AssumeRoleInput{
+								RoleArn:         &roleToAssumeArn[i],
+								RoleSessionName: &sessionName,
+							})
+							utils.CheckAndReturnError(err)
+						}
+					}
+				} else if len(roleToAssumeArn) > 1 {
+					for i := 0; i < len(roleToAssumeArn); i++ {
+						fmt.Printf("[%v/%v] ", i+1, len(roleToAssumeArn))
+						fmt.Println(roleToAssumeArn[i])
+						if i == 0 {
+							result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+								RoleArn:         &roleToAssumeArn[i],
+								RoleSessionName: &sessionName,
+							})
+							utils.CheckAndReturnError(err)
+							tempCreds.AccessKeyID = *result.Credentials.AccessKeyId
+							tempCreds.SecretAccessKey = *result.Credentials.SecretAccessKey
+							tempCreds.SessionToken = *result.Credentials.SessionToken
+						} else {
+							chainAws, err := session.NewSession(&aws.Config{
+								Credentials: credentials.NewStaticCredentials(tempCreds.AccessKeyID, tempCreds.SecretAccessKey, tempCreds.SessionToken),
+							})
+							utils.CheckAndReturnError(err)
+							svcChain := sts.New(chainAws)
+							result, err = svcChain.AssumeRole(&sts.AssumeRoleInput{
+								RoleArn:         &roleToAssumeArn[i],
+								RoleSessionName: &sessionName,
+							})
+							utils.CheckAndReturnError(err)
+						}
+					}
 				} else {
 					result, err = svc.AssumeRole(&sts.AssumeRoleInput{
-						RoleArn:         &roleToAssumeArnString,
+						RoleArn:         &singleRoleToAssumeArn,
 						RoleSessionName: &sessionName,
 					})
 				}

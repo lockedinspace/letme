@@ -43,7 +43,7 @@ specified in the DynamoDB table or in your cache file.`,
 		profile := utils.ConfigFileResultString("Aws_source_profile")
 		region := utils.ConfigFileResultString("Aws_source_profile_region")
 		table := utils.ConfigFileResultString("Dynamodb_table")
-		
+
 		// create a new aws session and try to get credentials
 		sesAws, err := session.NewSession(&aws.Config{
 			Region:      aws.String(region),
@@ -76,7 +76,7 @@ specified in the DynamoDB table or in your cache file.`,
 			utils.CheckAndReturnError(err)
 			if localFlag {
 				for _, value := range allitems {
-					sorted = append(sorted, value.Name+"\t"+value.Region[0]+"\t"+utils.CheckAccountLocally(value.Name))
+					sorted = append(sorted, value.Name+"\t"+value.Region[0]+"\t"+utils.GetLatestRequestedTime(utils.AwsSingleReplaceBlock(utils.AwsCredsFileRead(), value.Name))+"\t"+utils.CheckAccountLocally(value.Name))
 				}
 			} else {
 				for _, value := range allitems {
@@ -88,8 +88,8 @@ specified in the DynamoDB table or in your cache file.`,
 			sort.Strings(sorted)
 			w := tabwriter.NewWriter(os.Stdout, 35, 200, 1, ' ', 0)
 			if localFlag {
-				fmt.Fprintln(w, "NAME:\tMAIN REGION:\tLOCAL STATUS (credentials,config):")
-				fmt.Fprintln(w, "-----\t------------\t----------------------------------")
+				fmt.Fprintln(w, "NAME:\tMAIN REGION:\tLAST ASSUMED:\tCREDS/CONFIG FILES:")
+				fmt.Fprintln(w, "-----\t------------\t-------------\t-------------------")
 			} else {
 				fmt.Fprintln(w, "NAME:\tMAIN REGION:")
 				fmt.Fprintln(w, "-----\t------------")
@@ -99,6 +99,7 @@ specified in the DynamoDB table or in your cache file.`,
 				w.Flush()
 			}
 		} else {
+
 			// create a new dynamodb session and prepare a query
 			sesAwsDB := dynamodb.New(sesAws)
 			proj := expression.NamesList(expression.Name("name"), expression.Name("region"))
@@ -131,7 +132,7 @@ specified in the DynamoDB table or in your cache file.`,
 					items := account{}
 					err = dynamodbattribute.UnmarshalMap(value, &items)
 					utils.CheckAndReturnError(err)
-					sorted = append(sorted, items.Name+"\t"+items.Region[0]+"\t"+utils.CheckAccountLocally(items.Name))
+					sorted = append(sorted, items.Name+"\t"+items.Region[0]+"\t"+utils.GetLatestRequestedTime(utils.AwsSingleReplaceBlock(utils.AwsCredsFileRead(), items.Name))+"\t"+utils.CheckAccountLocally(items.Name))
 				}
 			} else {
 				for _, value := range scanTable.Items {
@@ -146,8 +147,8 @@ specified in the DynamoDB table or in your cache file.`,
 			sort.Strings(sorted)
 			w := tabwriter.NewWriter(os.Stdout, 35, 200, 1, ' ', 0)
 			if localFlag {
-				fmt.Fprintln(w, "NAME:\tMAIN REGION:\tLOCAL STATUS (credentials,config):")
-				fmt.Fprintln(w, "-----\t------------\t----------------------------------")
+				fmt.Fprintln(w, "NAME:\tMAIN REGION:\tLAST ASSUMED:\tCREDS/CONFIG FILES:")
+				fmt.Fprintln(w, "-----\t------------\t-------------\t-------------------")
 			} else {
 				fmt.Fprintln(w, "NAME:\tMAIN REGION:")
 				fmt.Fprintln(w, "-----\t------------")
@@ -163,5 +164,5 @@ specified in the DynamoDB table or in your cache file.`,
 func init() {
 	var local bool
 	rootCmd.AddCommand(listCmd)
-	listCmd.Flags().BoolVarP(&local, "local", "l", false, "lists local accounts and their respective status")
+	listCmd.Flags().BoolVarP(&local, "local", "l", false, "lists with additional information, such as last requested time, \nit also checks if a profile is found under your aws credentials and config files.")
 }

@@ -33,6 +33,7 @@ This will improve performance as common queries will be satisified by the cache 
 be routed to the DynamoDB service. 
         `,
 	Run: func(cmd *cobra.Command, args []string) {
+
 		// if remove flag is passed, remove cache file
 		removeFlag, _ := cmd.Flags().GetBool("remove")
 		if removeFlag {
@@ -42,10 +43,11 @@ be routed to the DynamoDB service.
 				fmt.Println("Cache file successfully removed.")
 				os.Exit(0)
 			} else {
-				fmt.Println("letme: Could not find nor remove cache file.")
+				fmt.Println("letme: could not find nor remove cache file.")
 				os.Exit(1)
 			}
 		}
+
 		// import a struct to unmarshal the letme-config (toml) document.
 		type structUnmarshal = utils.GeneralParams
 		type general map[string]structUnmarshal
@@ -106,6 +108,7 @@ be routed to the DynamoDB service.
 		utils.CheckAndReturnError(err)
 		defer cacheFilePath.Close()
 		cacheFileWriter := bufio.NewWriter(cacheFilePath)
+
 		// once the query is prepared, scan the table name (specified on letme-config) to retrieve the fields and loop through the results
 		scanTable, err := sesAwsDB.Scan(inputs)
 		utils.CheckAndReturnError(err)
@@ -113,8 +116,8 @@ be routed to the DynamoDB service.
 			item := account{}
 			err = dynamodbattribute.UnmarshalMap(i, &item)
 			utils.CheckAndReturnError(err)
-			// save the exported variables into a file (.letme-cache) this will improve performance because common queries will be satisified by the cache file
 
+			// save the exported variables into a file (.letme-cache) this will improve performance because common queries will be satisified by the cache file
 			_, err = fmt.Fprintf(cacheFileWriter, "%v", utils.TemplateCacheFile(item.Name, item.Id, item.Role, item.Region))
 			utils.CheckAndReturnError(err)
 			cacheFileWriter.Flush()

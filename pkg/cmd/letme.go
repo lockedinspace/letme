@@ -1,13 +1,18 @@
 package letme
 
 import (
+	"context"
 	"fmt"
+	"github.com/google/go-github/v48/github"
+	"github.com/hashicorp/go-version"
+	"github.com/lockedinspace/letme/pkg"
 	"github.com/spf13/cobra"
 	"os"
 	"runtime"
 )
 
-var version = "v0.1.5"
+var currentVersion = "v0.1.5"
+var versionPrettyName = "Insipid waterfall"
 var rootCmd = &cobra.Command{
 	Use:   "letme",
 	Short: "Obtain AWS credentials from another account",
@@ -26,7 +31,26 @@ load the temporal credentials onto your aws files.
 }
 
 func getVersions() string {
-	fmt.Println("letme "+version+" ("+runtime.GOOS+"/"+runtime.GOARCH+")")
+	fmt.Println("letme " + currentVersion + " (" + versionPrettyName + ") for (" + runtime.GOOS + "/" + runtime.GOARCH + ")")
+
+	client := github.NewClient(nil)
+	tags, _, err := client.Repositories.ListReleases(context.Background(), "lockedinspace", "letme", nil)
+	utils.CheckAndReturnError(err)
+	v1, err := version.NewVersion(currentVersion)
+	utils.CheckAndReturnError(err)
+	if len(tags) > 0 {
+		latestTag := tags[0]
+		v2, err := version.NewVersion(*latestTag.Name)
+		utils.CheckAndReturnError(err)
+		if v1.LessThan(v2) {
+			fmt.Printf("\n%s is not longer the latest version. Please consider updating to: %s\n", v1, v2)
+		} else {
+			fmt.Println("\nYou are using the latest version available.")
+		}
+	} else {
+		fmt.Printf("No tags yet\n")
+	}
+	fmt.Println("More info: https://github.com/lockedinspace/letme")
 	return " "
 }
 func init() {

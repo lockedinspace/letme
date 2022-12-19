@@ -4,7 +4,9 @@
 - Go (recommended 1.19 or >= 1.16) installed in your system.
 - AWS cli (recommended v2) installed in your system.
 ## What letme achieves
-letme was born in order to have a reliable and fast way to switch between AWS accounts from the cli, as some AWS system administrators found themselves using tools which involved in way too many variables to keep in mind in order to switch between accounts. letme tries to mitigate the hassle that involves using the assume role api, switching between chained roles, etc. From the other hand, it does not tinker with the end-user machine, insted it assumes that the end user knows how to secure their file access, etc. 
+letme was born in order to have a reliable and fast way to switch between AWS accounts from the cli, as some AWS system administrators found themselves using tools which involved in way too many variables to keep in mind in order to switch between accounts. 
+
+It also mitigates the hassle that involves using the aws assume role api, switching between chained roles, etc. From the other hand, it does not tinker with the end-user machine, insted it assumes that the end user knows how to secure their file access, etc. 
 
 letme reads from a common database, so no more: _"From my local computer works."_
 

@@ -14,14 +14,14 @@ It is also mantained and developed under the following statement:
 
 - A simple tool which writes/updates AWS credentials under your AWS files.
 
-This achieves a lightweight, integrity-driven, fast and non-intrusive toolkit that only reads from a DynamoDB database, authenticates the user (if MFA is enabled and AWS authorizes the assume role request) and adds the successful credentials into (``$HOME/.aws/credentials`` and ``$HOME/.aws/config``).
+This achieves a lightweight, integrity-driven, fast and non-intrusive toolkit that only reads from a DynamoDB database, authenticates the user (_if MFA is enabled and AWS authorizes the assume role request_) and adds the successful credentials into (``$HOME/.aws/credentials`` and ``$HOME/.aws/config``).
 
 Later on, you can append the  ``--profile example1`` to your AWS cli operations and call resources from within example1's AWS account.
 ## What it is not
 This software is not intended for:
 
 - Securing your AWS files, letme just reads and writes to them. You are responsable to prevent unauthorized access to those files.
-- Securing the AWS side (requiring MFA in your trust relationships, using a role with the least amount of privileges, etc.)
+- Securing the AWS side (_requiring MFA in your trust relationships, using a role with the least amount of privileges, etc._)
 
 ## Setting up letme
 
@@ -92,14 +92,14 @@ If the IAM role has a multi factor authentication condition:
   }
 }
 ```
-You will need to set the ``mfa_arn`` to your mfa device for the profile specified under ``aws_source_profile``, afterwards, letme will ask you to provide the mfa token. If the token is valid, you will get the new credentials written or overwritten  (if they already exist from a previous ``letme obtain`` call) (image step 2) and you will be able to call resources (image step 3) from that AWS account (image step 4).
+You will need to set the ``mfa_arn`` to your mfa device for the profile specified under ``aws_source_profile``, afterwards, letme will ask you to provide the mfa token. If the token is valid, you will get the new credentials written or overwritten  (_if they already exist from a previous ``letme obtain`` call_) (_image step 2_) and you will be able to call resources (_image step 3_) from that AWS account (_image step 4_).
 
 If you wish to cache some queries, you must run ``letme init`` which will create a file containing all of the accounts from your DynamoDB table. This will speed up response times and save you some extra billing at the end of the month. The downside is that you will be working with a copy, so if anyone updates the DynamoDB, you will need to rerun ``letme init`` in order to update your local file against the remote DynamoDB table.
 It is recommended to run ``letme init`` before obtaining credentials.
 
 ### Multi-account role chaining (added in v0.1.5)
 
-You can also assume a role through a series of accounts. Note the diagram below to clarify. The initiator role (Role 1 in diagram), should only be accesed based on a true multi factor authentication condition (see above). 
+You can also assume a role through a series of accounts. Note the diagram below to clarify. The initiator role (_Role 1 in diagram_), should only be accesed based on a true multi factor authentication condition (_see above_). 
 
 ![N|Solid](docs/letme-multi-account-role-chaining.png)
 

@@ -6,7 +6,7 @@
 ## What letme achieves
 letme was born in order to have a reliable and fast way to switch between AWS accounts from the cli, as some AWS system administrators found themselves using tools which involved in way too many variables to keep in mind in order to switch between accounts. 
 
-It also mitigates the hassle that involves using the aws assume role api, switching between chained roles, etc. On the other hand, it does not tinker with the end-user machine (using the keychain, updating environment variables, executing other programs), insted it assumes that the end user knows how to secure their file access, etc. 
+It also mitigates the hassle that involves using the aws assume role api, switching between chained roles, etc. Moreover, it does not tinker with the end-user machine (_using the keychain, updating environment variables, executing other programs_), insted it assumes that the end user knows how to secure their file access, etc. 
 
 letme reads from a common database, so no more: _"From my local computer works."_
 

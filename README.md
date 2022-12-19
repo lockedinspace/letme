@@ -153,5 +153,5 @@ Enter MFA one time pass code: 123456
 [3/3] 
 letme: use the argument '--profile example1' to interact with the account.
 ```
-Some important notes regarding this approach are:
+Some important notes regarding this approach:
 - Currently, letme only supports using MFA authentication for the first role.

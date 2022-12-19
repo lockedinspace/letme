@@ -4,7 +4,7 @@
 - Go (recommended 1.19 or >= 1.16) installed in your system.
 - AWS cli (recommended v2) installed in your system.
 ## What letme achieves
-letme was born from the need to have a toolkit which enabled an aws system administrator to have a reliable way to switch between environments. In simple words, letme manages and obtains AWS credentials from another account.
+letme was born in order to have a reliable way to switch between AWS environments from the cli, this should not be intrusive and add extra dangling resources, it should be a polished and clean solution. In simple words, letme manages and obtains AWS credentials from another account.
 
 letme works with only a DynamoDB table which will store all information needed to switch between accounts.
 

@@ -33,7 +33,7 @@ Nevertheless, if want to set up letme for your organization you must spin up the
 ### Installing letme
 Review the requirements and install letme with:
 
-``go install github.com/lockedinspace/letme@latest``. 
+``go install github.com/lockedinspace/letme@latest``
 
 Go will automatically install it in your ``$GOPATH/bin`` directory which should be in your ``$PATH``.
 

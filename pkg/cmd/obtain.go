@@ -152,10 +152,9 @@ and can be used with the argument '--profile example1' within the aws cli binary
 					fmt.Println("More than one role detected. Total hops:", len(account.Role))
 					var creds credentials.Value
 					for i := 0; i < len(account.Role); i++ {
-						fmt.Printf("[%v/%v] ", i+1, len(account.Role))
-						fmt.Println(account.Role[i])
+						fmt.Printf("[%v/%v]\n", i+1, len(account.Role))
 						if i == 0 && len(serialMfa) > 0 {
-							fmt.Println("Enter MFA one time pass code: ")
+							fmt.Printf("Enter MFA one time pass code: ")
 							var tokenMfa string
 							fmt.Scanln(&tokenMfa)
 							result, err = svc.AssumeRole(&sts.AssumeRoleInput{
@@ -322,11 +321,11 @@ and can be used with the argument '--profile example1' within the aws cli binary
 
 				// check if mfa authentication is enabled
 				if len(serialMfa) > 0 && len(roleToAssumeArn) > 1 {
+					fmt.Println("More than one role detected. Total hops:", len(roleToAssumeArn))
 					for i := 0; i < len(roleToAssumeArn); i++ {
-						fmt.Printf("[%v/%v] ", i+1, len(roleToAssumeArn))
-						fmt.Println(roleToAssumeArn[i])
+						fmt.Printf("[%v/%v]\n", i+1, len(roleToAssumeArn))
 						if i == 0 {
-							fmt.Println("Enter MFA one time pass code: ")
+							fmt.Printf("Enter MFA one time pass code: ")
 							var tokenMfa string
 							fmt.Scanln(&tokenMfa)
 							result, err = svc.AssumeRole(&sts.AssumeRoleInput{
@@ -353,9 +352,9 @@ and can be used with the argument '--profile example1' within the aws cli binary
 						}
 					}
 				} else if len(roleToAssumeArn) > 1 {
+					fmt.Println("More than one role detected. Total hops:", len(roleToAssumeArn))
 					for i := 0; i < len(roleToAssumeArn); i++ {
-						fmt.Printf("[%v/%v] ", i+1, len(roleToAssumeArn))
-						fmt.Println(roleToAssumeArn[i])
+						fmt.Printf("[%v/%v]\n", i+1, len(roleToAssumeArn))
 						if i == 0 {
 							result, err = svc.AssumeRole(&sts.AssumeRoleInput{
 								RoleArn:         &roleToAssumeArn[i],

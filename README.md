@@ -144,14 +144,14 @@ Using the letme account structure, the roles should be placed
 ```
 The output from the letme cli, is as follows:
 ```bash
-~ $ letme obtain example1
+~ $ letme obtain Account3
 Using default session name: mySession
 More than one role detected. Total hops: 3
 [1/3] 
 Enter MFA one time pass code: 123456
 [2/3] 
 [3/3] 
-letme: use the argument '--profile example1' to interact with the account.
+letme: use the argument '--profile Account3' to interact with the account.
 ```
 Some important notes regarding this approach:
 - Currently, letme only supports using MFA authentication for the first role.

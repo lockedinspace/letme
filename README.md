@@ -158,8 +158,7 @@ Using the letme account structure, the roles should be placed
     ]
 }
 ```
-```
-This is an example output for assuming through chained IAM roles
+The following is an example output when assuming through multiple roles
 ```bash
 ~ $ letme obtain Account3
 Using default session name: mySession

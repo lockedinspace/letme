@@ -11,13 +11,13 @@ import (
 	"runtime"
 )
 
-var currentVersion = "v0.1.5"
-var versionPrettyName = "Insipid waterfall"
+var currentVersion = "v0.1.6"
+var versionPrettyName = "Refurbished beagle"
 var rootCmd = &cobra.Command{
 	Use:   "letme",
 	Short: "Obtain AWS credentials from another account",
-	Long: `letme will query the DynamoDB table or cache file for the specified account and
-load the temporal credentials onto your aws files.
+	Long: `letme automates the process of authenticating and obtaining credentials
+from another AWS account.
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		versionFlag, _ := cmd.Flags().GetBool("version")

@@ -35,10 +35,10 @@ var obtainCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
-	Short: "Obtain aws credentials",
-	Long: `Obtains assumed credentials for the account specified.
-Once the user successfully authenticates itself. Credentials will last 3600 seconds
-and can be used with the argument '--profile example1' within the aws cli binary.`,
+	Short: "Obtain account credentials",
+	Long: `Obtains credentials once the user authenticates itself.
+Credentials will last 3600 seconds and can be used with the argument '--profile ACCOUNT_NAME' 
+within the aws cli binary.`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
@@ -135,17 +135,27 @@ and can be used with the argument '--profile example1' within the aws cli binary
 				// save into a variable the assume role output and check if mfa authentication is enabled
 				var result *sts.AssumeRoleOutput
 				if len(serialMfa) > 0 && len(account.Role) == 1 {
-					fmt.Println("Enter MFA one time pass code: ")
-					var tokenMfa string
-					fmt.Scanln(&tokenMfa)
-					result, err = svc.AssumeRole(&sts.AssumeRoleInput{
-						RoleArn:         &roleToAssumeArn,
-						RoleSessionName: &sessionName,
-						SerialNumber:    &serialMfa,
-						TokenCode:       &tokenMfa,
-					})
-					utils.CheckAndReturnError(err)
-
+					inlineTokenMfa, _ := cmd.Flags().GetString("inline-mfa")
+					if len(inlineTokenMfa) > 0 {
+						result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+							RoleArn:         &roleToAssumeArn,
+							RoleSessionName: &sessionName,
+							SerialNumber:    &serialMfa,
+							TokenCode:       &inlineTokenMfa,
+						})
+						utils.CheckAndReturnError(err)
+					} else {
+						fmt.Printf("Enter MFA one time pass code: ")
+						var tokenMfa string
+						fmt.Scanln(&tokenMfa)
+						result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+							RoleArn:         &roleToAssumeArn,
+							RoleSessionName: &sessionName,
+							SerialNumber:    &serialMfa,
+							TokenCode:       &tokenMfa,
+						})
+						utils.CheckAndReturnError(err)
+					}
 				} else if len(account.Role) > 1 {
 
 					// check if account has more than one role, if true, start hopping between roles
@@ -154,19 +164,33 @@ and can be used with the argument '--profile example1' within the aws cli binary
 					for i := 0; i < len(account.Role); i++ {
 						fmt.Printf("[%v/%v]\n", i+1, len(account.Role))
 						if i == 0 && len(serialMfa) > 0 {
-							fmt.Printf("Enter MFA one time pass code: ")
-							var tokenMfa string
-							fmt.Scanln(&tokenMfa)
-							result, err = svc.AssumeRole(&sts.AssumeRoleInput{
-								RoleArn:         &account.Role[i],
-								RoleSessionName: &sessionName,
-								SerialNumber:    &serialMfa,
-								TokenCode:       &tokenMfa,
-							})
-							utils.CheckAndReturnError(err)
-							creds.AccessKeyID = *result.Credentials.AccessKeyId
-							creds.SecretAccessKey = *result.Credentials.SecretAccessKey
-							creds.SessionToken = *result.Credentials.SessionToken
+							inlineTokenMfa, _ := cmd.Flags().GetString("inline-mfa")
+							if len(inlineTokenMfa) > 0 {
+								result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+									RoleArn:         &account.Role[i],
+									RoleSessionName: &sessionName,
+									SerialNumber:    &serialMfa,
+									TokenCode:       &inlineTokenMfa,
+								})
+								utils.CheckAndReturnError(err)
+								creds.AccessKeyID = *result.Credentials.AccessKeyId
+								creds.SecretAccessKey = *result.Credentials.SecretAccessKey
+								creds.SessionToken = *result.Credentials.SessionToken
+							} else {
+								fmt.Printf("Enter MFA one time pass code: ")
+								var tokenMfa string
+								fmt.Scanln(&tokenMfa)
+								result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+									RoleArn:         &account.Role[i],
+									RoleSessionName: &sessionName,
+									SerialNumber:    &serialMfa,
+									TokenCode:       &tokenMfa,
+								})
+								utils.CheckAndReturnError(err)
+								creds.AccessKeyID = *result.Credentials.AccessKeyId
+								creds.SecretAccessKey = *result.Credentials.SecretAccessKey
+								creds.SessionToken = *result.Credentials.SessionToken
+							}
 						} else if i == 0 {
 							result, err = svc.AssumeRole(&sts.AssumeRoleInput{
 								RoleArn:         &account.Role[i],
@@ -318,26 +342,39 @@ and can be used with the argument '--profile example1' within the aws cli binary
 				svc := sts.New(sesAws)
 				var result *sts.AssumeRoleOutput
 				var tempCreds credentials.Value
-
 				// check if mfa authentication is enabled
 				if len(serialMfa) > 0 && len(roleToAssumeArn) > 1 {
 					fmt.Println("More than one role detected. Total hops:", len(roleToAssumeArn))
 					for i := 0; i < len(roleToAssumeArn); i++ {
 						fmt.Printf("[%v/%v]\n", i+1, len(roleToAssumeArn))
 						if i == 0 {
-							fmt.Printf("Enter MFA one time pass code: ")
-							var tokenMfa string
-							fmt.Scanln(&tokenMfa)
-							result, err = svc.AssumeRole(&sts.AssumeRoleInput{
-								RoleArn:         &roleToAssumeArn[i],
-								RoleSessionName: &sessionName,
-								SerialNumber:    &serialMfa,
-								TokenCode:       &tokenMfa,
-							})
-							utils.CheckAndReturnError(err)
-							tempCreds.AccessKeyID = *result.Credentials.AccessKeyId
-							tempCreds.SecretAccessKey = *result.Credentials.SecretAccessKey
-							tempCreds.SessionToken = *result.Credentials.SessionToken
+							inlineTokenMfa, _ := cmd.Flags().GetString("inline-mfa")
+							if len(inlineTokenMfa) > 0 {
+								result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+									RoleArn:         &roleToAssumeArn[i],
+									RoleSessionName: &sessionName,
+									SerialNumber:    &serialMfa,
+									TokenCode:       &inlineTokenMfa,
+								})
+								utils.CheckAndReturnError(err)
+								tempCreds.AccessKeyID = *result.Credentials.AccessKeyId
+								tempCreds.SecretAccessKey = *result.Credentials.SecretAccessKey
+								tempCreds.SessionToken = *result.Credentials.SessionToken
+							} else {
+								fmt.Printf("Enter MFA one time pass code: ")
+								var tokenMfa string
+								fmt.Scanln(&tokenMfa)
+								result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+									RoleArn:         &roleToAssumeArn[i],
+									RoleSessionName: &sessionName,
+									SerialNumber:    &serialMfa,
+									TokenCode:       &tokenMfa,
+								})
+								utils.CheckAndReturnError(err)
+								tempCreds.AccessKeyID = *result.Credentials.AccessKeyId
+								tempCreds.SecretAccessKey = *result.Credentials.SecretAccessKey
+								tempCreds.SessionToken = *result.Credentials.SessionToken
+							}
 						} else {
 							chainAws, err := session.NewSession(&aws.Config{
 								Credentials: credentials.NewStaticCredentials(tempCreds.AccessKeyID, tempCreds.SecretAccessKey, tempCreds.SessionToken),
@@ -377,13 +414,35 @@ and can be used with the argument '--profile example1' within the aws cli binary
 							utils.CheckAndReturnError(err)
 						}
 					}
+				} else if len(serialMfa) > 0 {
+					inlineTokenMfa, _ := cmd.Flags().GetString("inline-mfa")
+					if len(inlineTokenMfa) > 0 {
+						result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+							RoleArn:         &singleRoleToAssumeArn,
+							RoleSessionName: &sessionName,
+							SerialNumber:    &serialMfa,
+							TokenCode:       &inlineTokenMfa,
+						})
+						utils.CheckAndReturnError(err)
+					} else {
+						fmt.Printf("Enter MFA one time pass code: ")
+						var tokenMfa string
+						fmt.Scanln(&tokenMfa)
+						result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+							RoleArn:         &singleRoleToAssumeArn,
+							RoleSessionName: &sessionName,
+							SerialNumber:    &serialMfa,
+							TokenCode:       &tokenMfa,
+						})
+						utils.CheckAndReturnError(err)
+					}
 				} else {
 					result, err = svc.AssumeRole(&sts.AssumeRoleInput{
 						RoleArn:         &singleRoleToAssumeArn,
 						RoleSessionName: &sessionName,
 					})
+					utils.CheckAndReturnError(err)
 				}
-				utils.CheckAndReturnError(err)
 
 				// save results into variables
 				accountName := accountName.(string)
@@ -464,4 +523,5 @@ and can be used with the argument '--profile example1' within the aws cli binary
 
 func init() {
 	rootCmd.AddCommand(obtainCmd)
+	obtainCmd.Flags().String("inline-mfa", "", "pass the mfa token without user prompt")
 }

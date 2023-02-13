@@ -31,9 +31,10 @@ var listCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
-	Short: "List AWS accounts",
-	Long: `Lists all of the AWS accounts and their main region
-specified in the DynamoDB table or in your cache file.`,
+	Short: "Lists your accounts",
+	Long: `Lists all the AWS accounts and their main region.
+If you are using a cache file in between, the list operation will be answered
+by the cache file.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// get local flag
@@ -86,7 +87,7 @@ specified in the DynamoDB table or in your cache file.`,
 
 			// sort the slice and using a tabwriter print a nicely formed output
 			sort.Strings(sorted)
-			w := tabwriter.NewWriter(os.Stdout, 35, 200, 1, ' ', 0)
+			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)
 			if localFlag {
 				fmt.Fprintln(w, "NAME:\tMAIN REGION:\tLAST ASSUMED:\tCREDS/CONFIG FILES:")
 				fmt.Fprintln(w, "-----\t------------\t-------------\t-------------------")
@@ -145,7 +146,7 @@ specified in the DynamoDB table or in your cache file.`,
 
 			// sort the slice and using a tabwriter print a nicely formed output
 			sort.Strings(sorted)
-			w := tabwriter.NewWriter(os.Stdout, 35, 200, 1, ' ', 0)
+			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)
 			if localFlag {
 				fmt.Fprintln(w, "NAME:\tMAIN REGION:\tLAST ASSUMED:\tCREDS/CONFIG FILES:")
 				fmt.Fprintln(w, "-----\t------------\t-------------\t-------------------")
@@ -164,5 +165,5 @@ specified in the DynamoDB table or in your cache file.`,
 func init() {
 	var local bool
 	rootCmd.AddCommand(listCmd)
-	listCmd.Flags().BoolVarP(&local, "local", "l", false, "lists with additional information, such as last requested time, \nit also checks if a profile is found under your aws credentials and config files.")
+	listCmd.Flags().BoolVarP(&local, "local", "l", false, "lists with additional information, such as last requested time. \nAlso checks if a profile is found in your aws creds/config files.")
 }

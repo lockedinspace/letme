@@ -11,11 +11,10 @@ import (
 
 var configFileCmd = &cobra.Command{
 	Use:   "config-file",
-	Short: "Create a configuration file where parameters such as MFA arn are stored and used afterwards.",
-	Long: `Creates a toml template with all the key-value pairs needed by letme.
-The config file is created in '$HOME/.letme/letme-config', letme needs this file
-to perform aws calls. Once created, you will need to manually edit that file and fill it with 
-your values.
+	Short: "Creates the letme configuration file.",
+	Long: `Creates a configuration file with all the needed key-value pairs.
+The config file is created in your '$HOME/.letme/' directory, letme needs this file
+to perform aws calls, use the mfa device, etc.
         `,
 	Run: func(cmd *cobra.Command, args []string) {
 
@@ -45,7 +44,7 @@ letme: config file should have the following structure:
 		// creates the directory + config file or just the config file if the directory already exists
 		// then writes the marshalled values on a toml document (letme-config).
 		if _, err := os.Stat(homeDir + "/.letme/"); err != nil {
-			err = os.Mkdir(homeDir+"/.letme/", 0700)
+			err = os.Mkdir(homeDir+"/.letme/", 0755)
 			utils.CheckAndReturnError(err)
 
 			configFile, err := os.Create(filepath.Join(homeDir+"/.letme/", filepath.Base(fileName)))
@@ -56,12 +55,13 @@ letme: config file should have the following structure:
 			_, err = fmt.Fprintf(writer, "%v", utils.TemplateConfigFile())
 			utils.CheckAndReturnError(err)
 			writer.Flush()
+			err = os.Chmod(filepath.Join(homeDir+"/.letme/", filepath.Base(fileName)), 0600)
+			utils.CheckAndReturnError(err)
 			fmt.Println("letme: edit the config file at " + homeDir + "/.letme/letme-config with your values.")
 		} else if _, err := os.Stat(homeDir + "/.letme/"); err == nil {
 			if _, err = os.Stat(homeDir + "/.letme/" + fileName); err == nil && !(forceFlag) {
 				fmt.Println("letme: letme-config file already exists at: " + homeDir + "/.letme/" + fileName)
 				fmt.Println("letme: to restore the letme-config file, pass the -f, --force flags or delete the letme-config file manually.")
-				fmt.Println("letme: discover more flags with -h flag.")
 				os.Exit(0)
 			}
 			configFile, err := os.Create(filepath.Join(homeDir+"/.letme/", filepath.Base(fileName)))

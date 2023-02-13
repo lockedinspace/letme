@@ -19,6 +19,12 @@ import (
 var initCmd = &cobra.Command{
 	Use: "init",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if _, err := os.Stat(utils.GetHomeDirectory() + "/.letme/letme-config"); err == nil {
+			utils.CheckAndReturnError(err)
+		} else {
+			fmt.Println("letme: could not locate any config file. Please run 'letme config-file' to create one.")
+			os.Exit(1)
+		}
 		result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
 		if result {
 		} else {
@@ -26,11 +32,10 @@ var initCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
-	Short: "Create a cache to speed up response times",
-	Long: `Creates a cache file in the users home directory.
+	Short: "Creates a file to speed up response times",
+	Long: `Creates a cache file in your '$HOME/.letme/' directory.
 IDs, account names, roles to be assumed and regions will be present in the cache file. 
-This will improve performance as common queries will be satisified by the cache file and will not
-be routed to the DynamoDB service. 
+This will improve performance as common queries will be firstly answered by the cache file.
         `,
 	Run: func(cmd *cobra.Command, args []string) {
 
@@ -61,7 +66,7 @@ be routed to the DynamoDB service.
 		var exportedProfile string
 		var exportedProfileRegion string
 		var exportedDynamoDBTable string
-		w := tabwriter.NewWriter(os.Stdout, 10, 200, 10, ' ', 0)
+		w := tabwriter.NewWriter(os.Stdout, 25, 200, 10, ' ', 0)
 		fmt.Println("Creating cache file with the following specs:\n")
 		fmt.Fprintln(w, "PROFILE:\tPROFILE REGION:\tDYNAMODB TABLE:")
 		fmt.Fprintln(w, "--------\t---------------\t---------------")
@@ -109,7 +114,7 @@ be routed to the DynamoDB service.
 		defer cacheFilePath.Close()
 		cacheFileWriter := bufio.NewWriter(cacheFilePath)
 
-		// once the query is prepared, scan the table name (specified on letme-config) to retrieve the fields and loop through the results
+		// once the query is prepared, scan the table name and retrieve the fields
 		scanTable, err := sesAwsDB.Scan(inputs)
 		utils.CheckAndReturnError(err)
 		for _, i := range scanTable.Items {
@@ -121,8 +126,9 @@ be routed to the DynamoDB service.
 			_, err = fmt.Fprintf(cacheFileWriter, "%v", utils.TemplateCacheFile(item.Name, item.Id, item.Role, item.Region))
 			utils.CheckAndReturnError(err)
 			cacheFileWriter.Flush()
-
 		}
+		err = os.Chmod(utils.GetHomeDirectory()+"/.letme/.letme-cache", 0600)
+		utils.CheckAndReturnError(err)
 		fmt.Println("Cache file stored on " + utils.GetHomeDirectory() + "/.letme/.letme-cache")
 
 	},

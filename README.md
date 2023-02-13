@@ -2,7 +2,7 @@
 
 ## Requirements
 - Go (recommended 1.19 or >= 1.16) installed in your system.
-- AWS cli (recommended v2) installed in your system.
+- AWS CLI (recommended v2) installed in your system.
 ## What letme achieves
 letme was born in order to have a reliable and fast way to switch between AWS accounts from the cli, as some AWS system administrators found themselves using tools which involved in way too many variables to keep in mind in order to switch between accounts. 
 
@@ -16,12 +16,12 @@ It is also mantained and developed under the following statement:
 
 This achieves a lightweight, integrity-driven, fast and non-intrusive toolkit that only reads from a DynamoDB database, authenticates the user (_if MFA is enabled and AWS authorizes the assume role request_) and adds the successful credentials into (``$HOME/.aws/credentials`` and ``$HOME/.aws/config``).
 
-Later on, you can append the  ``--profile example1`` to your AWS cli operations and call resources from within example1's AWS account.
+Later on, you can append the  ``--profile example1`` to your AWS CLI operations and call resources from within example1's AWS account.
 ## What it is not
 This software is not intended for:
 
 - Securing your AWS files, letme just reads and writes to them. You are responsable to prevent unauthorized access to those files.
-- Securing the AWS side (_requiring MFA in your trust relationships, using a role with the least amount of privileges, etc._)
+- Securing your AWS infrastructure (_requiring MFA in your trust relationships, using a role with fine-grained permissions, etc._)
 
 ## Setting up letme
 
@@ -42,7 +42,7 @@ If you wish to install from source, clone the repository and build the executabl
 This repository uses a ``go mod`` file, so don't git clone inside your ``$GOPATH``.
 
 ### Using the configuration file
-You will use a configuration file where values such as MFA device arn, DynamoDB table will be provided. A letme config file template looks like:
+letme needs a configuration file to read values from, it holds details regarding your AWS configurations.
 ```
 [general]
   aws_source_profile = "default"
@@ -52,20 +52,21 @@ You will use a configuration file where values such as MFA device arn, DynamoDB 
   session_name = "user001-with-letme"
 ```
 
-Run ``letme config-file`` to generate your empty template.
+Run ``letme config-file`` to generate your config-file.
 
 Where:
 | Key | Description | Default value | Required | Type |
 | ------ | ------ | ------ | ------ | ------ |
-| ``aws_source_profile`` | The profile name which stores the source account credentials. This account helds the DynamoDB table as well as being the IAM principal from which the AWS assumed account accepts [[1]](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html) | ``default`` | No | ``string`` |
+| ``aws_source_profile`` | The AWS CLI profile name which maps to the source account. This profile must held the DynamoDB table. [[1]](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html) | ``default`` | No | ``string`` |
 | ``aws_source_profile_region`` | The region name in the source account where the DynamoDB table is located [[2]](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) | ``-`` | Yes | ``string`` |
 | ``dynamodb_table`` | The DynamoDB table name where the AWS accounts are stored [3](#setting-up-the-aws-infrastructure-required-by-letme) | ``-`` | Yes | ``string`` |
-| ``mfa_arn`` | The AWS MFA device arn used to authenticate against AWS [[4]](https://docs.aws.amazon.com/cli/latest/reference/iam/list-mfa-devices.html)  | ``-`` | No (depending on your AWS trust relationship policy) | ``string`` |
-| ``session_name`` | The session name which letme uses when assuming a role | ``${account_name}-letme-session`` | No | ``string`` |
+| ``mfa_arn`` | Virtual MFA device arn used to authenticate against AWS [[4]](https://docs.aws.amazon.com/cli/latest/reference/iam/list-mfa-devices.html)  | ``-`` | No (depending on your AWS trust relationship policy) | ``string`` |
+| ``session_name`` | The session name when performing assumeRole requests [[5]](https://awscli.amazonaws.com/v2/documentation/api/2.0.33/reference/sts/assume-role.html#options)| ``${account_name}-letme-session`` | No | ``string`` |
 
+``-`` represents an empty/null value.
 ### Setting up the AWS infrastructure required by letme
 
-If you want to start using letme for your organization, you must deploy one DynamoDB table under your main AWS account which will be the one
+If you want to start using letme for your organization, you must deploy one DynamoDB table under your main AWS account (``aws_source_profile``) which will be the one
 hosting the whole central database for your organization. The DynamoDB table name will be the one used in your configuration file under the ``dynamodb_table`` key.  
 
 When adding a new AWS account, you need to create an item inside the DynamoDB table with the following structure: [AWS account structure](https://github.com/lockedinspace/letme/blob/main/docs/dynamodb_structure.json). Once you create that item, if you perform a ``letme list`` or ``letme init && letme list`` you will be able to list that new account.
@@ -99,7 +100,7 @@ It is recommended to run ``letme init`` before obtaining credentials.
 
 ### Multi-account role chaining (added in v0.1.5)
 
-You can also assume a role through a series of accounts. Note the diagram below to clarify. The initiator role (_Role 1 in diagram_), should only be accesed based on a true multi factor authentication condition (_see above_). 
+You can also assume a role through a series of iam roles (also known as iam role chaining). Note the diagram below to clarify. The initiator role (_Role 1 in diagram_), should only be accesed based on a true multi factor authentication condition (_see above_). 
 
 ![N|Solid](docs/letme-multi-account-role-chaining.png)
 
@@ -141,8 +142,22 @@ Using the letme account structure, the roles should be placed
   "arn:aws:iam::ACCOUNT3:role/role3"
  ]
 }
+> Note that roles should have sufficient iam permissions to perform ``sts:AssumeRole`` on the next iam role. E.g. ``role1`` permission policies:
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "PermissionToAssumeRole2",
+            "Effect": "Allow",
+            "Action": "sts:AssumeRole",
+            "Resource": "arn:aws:iam::ACCOUNT2:role/role2"
+        }
+    ]
+}
 ```
-The output from the letme cli, is as follows:
+```
+This is an example output for assuming through chained IAM roles
 ```bash
 ~ $ letme obtain Account3
 Using default session name: mySession
@@ -154,4 +169,4 @@ Enter MFA one time pass code: 123456
 letme: use the argument '--profile Account3' to interact with the account.
 ```
 Some important notes regarding this approach:
-- Currently, letme only supports using MFA authentication for the first role.
+> Currently, letme only supports using MFA authentication for the first role in the role-chaining list.

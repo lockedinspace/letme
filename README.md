@@ -100,11 +100,11 @@ It is recommended to run ``letme init`` before obtaining credentials.
 
 ### Multi-account role chaining (added in v0.1.5)
 
-You can also assume a role through a series of iam roles (also known as iam role chaining). Note the diagram below to clarify. The initiator role (_Role 1 in diagram_), should only be accesed based on a true multi factor authentication condition (_see above_). 
+You can also assume a role through a series of IAM roles (also known as IAM role chaining). Note the diagram below to clarify. The initiator role (_Role 1 in diagram_), should only be accesed based on a true multi factor authentication condition (_see above_). 
 
 ![N|Solid](docs/letme-multi-account-role-chaining.png)
 
-Role2 and Role3 iam role's trust relationships should use arn of the previous role as princial. E.g: Role2 trust relationship.
+Role2 and Role3 IAM role's trust relationships should use arn of the previous role as princial. E.g: Role2 trust relationship.
 
 ```json
 {
@@ -143,7 +143,7 @@ Using the letme account structure, the roles should be placed
  ]
 }
 ```
-> Roles should have sufficient iam permissions to perform ``sts:AssumeRole`` on the next iam role. E.g. ``role1`` permission policies:
+> Roles should have sufficient IAM permissions to perform ``sts:AssumeRole`` on the next IAM role. E.g. ``role1`` permission policies:
 
 ```json
 {

@@ -142,7 +142,9 @@ Using the letme account structure, the roles should be placed
   "arn:aws:iam::ACCOUNT3:role/role3"
  ]
 }
-> Note that roles should have sufficient iam permissions to perform ``sts:AssumeRole`` on the next iam role. E.g. ``role1`` permission policies:
+```
+> Roles should have sufficient iam permissions to perform ``sts:AssumeRole`` on the next iam role. E.g. ``role1`` permission policies:
+
 ```json
 {
     "Version": "2012-10-17",

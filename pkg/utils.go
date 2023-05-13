@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"io/ioutil"
@@ -189,10 +190,21 @@ aws_session_token = %v
 }
 
 // Marshalls data into a string
+func AwsConfigFileCredentialsProcessV1(accountName string, region string) string {
+	return fmt.Sprintf(
+		`#s-%v
+[profile %v]
+credential_process = letme obtain %v --v1
+region = %v
+output = json
+#e-%v
+`, accountName, accountName, accountName, region, accountName)
+}
+
+// Marshalls data into a string
 func AwsConfigFile(accountName string, region string) string {
 	return fmt.Sprintf(
 		`#s-%v
-#managed by letme
 [profile %v]
 region = %v
 output = json
@@ -200,7 +212,7 @@ output = json
 `, accountName, accountName, region, accountName)
 }
 
-// Removes from a file all text in between two strings
+// Removes from a file all text in between two indentificators (accountName)
 func AwsReplaceBlock(file string, accountName string) string {
 	str := "#s-" + accountName
 	etr := "#e-" + accountName
@@ -252,4 +264,49 @@ func CheckAccountLocally(account string) string {
 		return fmt.Sprintf("%t,%t", accountCredExists, accountConfExists)
 	}
 	return ""
+}
+
+// Return aws credentials following the credentials_process standard
+// https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sourcing-external.html
+
+func CredentialsProcessOutput(accessKeyID string, secretAccessKey string, sessionToken string, expirationTime time.Time) string {
+	type CredentialsProcess struct {
+		Version			int
+		AccessKeyId   	string
+		SecretAccessKey string
+		SessionToken	string
+		Expiration		time.Time
+	}
+	group := CredentialsProcess{
+		Version:     		1,
+		AccessKeyId:   		accessKeyID,
+		SecretAccessKey: 	secretAccessKey,
+		SessionToken: 		sessionToken,
+		Expiration: 		expirationTime,
+	}
+	b, err := json.Marshal(group)
+	CheckAndReturnError(err)
+	return string(b)
+}
+
+// Create a file which stores the last time when credentials where accessed. Then query if the account exists,
+// if not, it will create its first entry. If it already exists, it will either return true (if credemtials are still within the session_duration)
+// and false if credentials have already been expired.
+func CheckAccountDatabaseFile(accountName string) {
+	databaseFileWriter, err := os.OpenFile(GetHomeDirectory()+"/.letme/.letme-db", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	CheckAndReturnError(err)
+	type accountData struct {
+		Account     string `json:"account"`
+		LastRequest int64 `json:"lastRequest"`
+	}
+	account := accountData{
+		Account:     accountName,
+		LastRequest: time.Now().Unix(),
+	}
+	b, err := json.Marshal(account)
+	CheckAndReturnError(err)
+	if _, err = databaseFileWriter.WriteString(string(b)); err != nil {
+		CheckAndReturnError(err)
+		defer databaseFileWriter.Close()
+	}
 }

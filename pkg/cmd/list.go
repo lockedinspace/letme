@@ -31,10 +31,8 @@ var listCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
-	Short: "Lists your accounts",
-	Long: `Lists all the AWS accounts and their main region.
-If you are using a cache file in between, the list operation will be answered
-by the cache file.`,
+	Short: "List your accounts",
+	Long: `Lists all the AWS accounts and their main region.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// get local flag

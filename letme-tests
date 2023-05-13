@@ -1,0 +1,211 @@
+#!/bin/bash
+
+# Build and place the letme binary in your executable path and perform the tests.
+# You need to pass two accounts, a single account $1 and a multi-jump account name ($2) as arguments, aws-cli and perl binaries are also needed
+# This script only works with versions 0.2.0 or above
+
+# Global vars
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+# Summary of tests
+
+# Initial checks
+if ! command -v aws &> /dev/null; then
+    echo "letme: aws-cli binary could not be found"
+    exit 1
+elif ! command -v perl &> /dev/null; then
+    echo "letme: perl binary could not be found"
+    exit 1
+elif [[ -z $1 ]]; then
+    echo "letme: please specify a single account to perform tests"
+    exit 1
+elif [[ -z $2 ]]; then
+    echo "letme: please specify a multi account to perform tests"
+    exit 1
+fi
+
+# # Test 1
+# echo  "Test 1/12: Single account, no MFA"
+# if !(cat $HOME/.letme/letme-config | grep "#mfa_arn" >/dev/null); then
+#     perl -i -pe's/mfa_arn/#mfa_arn/g' /Users/gonzalovidal/main/.letme/letme-config > /dev/null
+# else
+#     :
+# fi
+# letme ob $1 > /dev/null && aws sts get-caller-identity --profile $1 > /dev/null
+# if [[ $? == 0 ]]; then
+#     echo -e "${GREEN}SUCCEED${NC}"
+# else 
+#     echo -e "${RED}FAILURE${NC}"
+#     exit 1
+# fi
+
+# # Test 2
+# echo -n "Test 2/12: Single account, with MFA (please input token): "
+# if cat $HOME/.letme/letme-config | grep "#mfa_arn" >/dev/null; then
+#     perl -i -pe's/#mfa_arn/mfa_arn/g' /Users/gonzalovidal/main/.letme/letme-config > /dev/null
+# else
+#     :
+# fi
+# letme ob $1 > /dev/null  && aws sts get-caller-identity --profile $1 > /dev/null
+# if [[ $? == 0 ]]; then
+#     echo -e "${GREEN}SUCCEED${NC}"
+# else 
+#     echo -e "${RED}FAILURE${NC}"
+#     exit 1
+# fi
+
+# # Test 3
+# echo -n "Test 3/12: Single account, with inline MFA (please input token): "
+# read inlinemfa
+# if cat $HOME/.letme/letme-config | grep "#mfa_arn" >/dev/null; then
+#     perl -i -pe's/#mfa_arn/mfa_arn/g' /Users/gonzalovidal/main/.letme/letme-config > /dev/null
+# else
+#     :
+# fi
+# letme ob $1 --inline-mfa $inlinemfa > /dev/null && aws sts get-caller-identity --profile $1 > /dev/null
+# if [[ $? == 0 ]]; then
+#     echo -e "${GREEN}SUCCEED${NC}"
+# else 
+#     echo -e "${RED}FAILURE${NC}"
+#     exit 1
+# fi
+
+# # Test 4
+# echo  "Test 4/12: Multi account, no MFA"
+# if !(cat $HOME/.letme/letme-config | grep "#mfa_arn" >/dev/null); then
+#     perl -i -pe's/mfa_arn/#mfa_arn/g' /Users/gonzalovidal/main/.letme/letme-config > /dev/null
+# else
+#     :
+# fi
+# letme ob $2 > /dev/null && aws sts get-caller-identity --profile $2 > /dev/null
+# if [[ $? == 0 ]]; then
+#     echo -e "${GREEN}SUCCEED${NC}"
+# else 
+#     echo -en "${RED}FAILURE${NC}"
+#     exit 1
+# fi
+
+# # Test 5
+# echo -n "Test 5/12: Multi account, with MFA (please input token): "
+# if cat $HOME/.letme/letme-config | grep "#mfa_arn" >/dev/null; then
+#     perl -i -pe's/#mfa_arn/mfa_arn/g' /Users/gonzalovidal/main/.letme/letme-config > /dev/null
+# else
+#     :
+# fi
+# letme ob $2 > /dev/null && aws sts get-caller-identity --profile $2 > /dev/null
+# if [[ $? == 0 ]]; then
+#     echo -e "${GREEN}SUCCEED${NC}"
+# else 
+#     echo -e "${RED}FAILURE${NC}"
+#     exit 1
+# fi
+
+# # Test 6
+# echo -n "Test 6/12: Multi account, with inline MFA (please input token): "
+# read inlinemfa
+# if cat $HOME/.letme/letme-config | grep "#mfa_arn" >/dev/null; then
+#     perl -i -pe's/#mfa_arn/mfa_arn/g' /Users/gonzalovidal/main/.letme/letme-config > /dev/null
+# else
+#     :
+# fi
+# letme ob $2 --inline-mfa $inlinemfa > /dev/null && aws sts get-caller-identity --profile $2 > /dev/null
+# if [[ $? == 0 ]]; then
+#     echo -e "${GREEN}SUCCEED${NC}"
+# else 
+#     echo -e "${RED}FAILURE${NC}"
+#     exit 1
+# fi
+
+# # Test 7
+# echo  "Test 7/12: Single account, no MFA with credential-process"
+# if !(cat $HOME/.letme/letme-config | grep "#mfa_arn" >/dev/null); then
+#     perl -i -pe's/mfa_arn/#mfa_arn/g' /Users/gonzalovidal/main/.letme/letme-config > /dev/null
+# else
+#     :
+# fi
+# letme ob $1 --credential-process > /dev/null && aws sts get-caller-identity --profile $1 > /dev/null
+# if [[ $? == 0 ]]; then
+#     echo -e "${GREEN}SUCCEED${NC}"
+# else 
+#     echo -en "${RED}FAILURE${NC}"
+#     exit 1
+# fi
+
+# Test 8
+echo -n "Test 8/12: Single account, with MFA (please input token) and credential-process: "
+if cat $HOME/.letme/letme-config | grep "#mfa_arn" >/dev/null; then
+    perl -i -pe's/#mfa_arn/mfa_arn/g' /Users/gonzalovidal/main/.letme/letme-config > /dev/null
+else
+    :
+fi
+letme ob $1 --credential-process  && aws sts get-caller-identity --profile $1
+if [[ $? == 0 ]]; then
+    echo -e "${GREEN}SUCCEED${NC}"
+else 
+    echo -e "${RED}FAILURE${NC}"
+    exit 1
+fi
+
+# Test 9
+echo -n "Test 9/12: Single account, with inline MFA (please input token) and credential-process: "
+read inlinemfa
+if cat $HOME/.letme/letme-config | grep "#mfa_arn" >/dev/null; then
+    perl -i -pe's/#mfa_arn/mfa_arn/g' /Users/gonzalovidal/main/.letme/letme-config > /dev/null
+else
+    :
+fi
+letme ob $1 --credential-process --inline-mfa $inlinemfa > /dev/null && aws sts get-caller-identity --profile $1 > /dev/null
+if [[ $? == 0 ]]; then
+    echo -e "${GREEN}SUCCEED${NC}"
+else 
+    echo -e "${RED}FAILURE${NC}"
+    exit 1
+fi
+
+# Test 10
+echo  "Test 7/12: Multi account, no MFA with credential-process"
+if !(cat $HOME/.letme/letme-config | grep "#mfa_arn" >/dev/null); then
+    perl -i -pe's/mfa_arn/#mfa_arn/g' /Users/gonzalovidal/main/.letme/letme-config > /dev/null
+else
+    :
+fi
+letme ob $2 --credential-process > /dev/null && aws sts get-caller-identity --profile $2 > /dev/null
+if [[ $? == 0 ]]; then
+    echo -e "${GREEN}SUCCEED${NC}"
+else 
+    echo -en "${RED}FAILURE${NC}"
+    exit 1
+fi
+
+# Test 11
+echo -n "Test 11/12: Multi account, with MFA (please input token) and credential-process: "
+if cat $HOME/.letme/letme-config | grep "#mfa_arn" >/dev/null; then
+    perl -i -pe's/#mfa_arn/mfa_arn/g' /Users/gonzalovidal/main/.letme/letme-config > /dev/null
+else
+    :
+fi
+letme ob $2 --credential-process > /dev/null && aws sts get-caller-identity --profile $2 > /dev/null
+if [[ $? == 0 ]]; then
+    echo -e "${GREEN}SUCCEED${NC}"
+else 
+    echo -e "${RED}FAILURE${NC}"
+    exit 1
+fi
+
+# Test 12
+echo -n "Test 12/12: Multi account, with inline MFA (please input token) and credential-process: "
+read inlinemfa
+if cat $HOME/.letme/letme-config | grep "#mfa_arn" >/dev/null; then
+    perl -i -pe's/#mfa_arn/mfa_arn/g' /Users/gonzalovidal/main/.letme/letme-config > /dev/null
+else
+    :
+fi
+letme ob $2 --credential-process --inline-mfa $inlinemfa > /dev/null && aws sts get-caller-identity --profile $2 > /dev/null
+if [[ $? == 0 ]]; then
+    echo -e "${GREEN}SUCCEED${NC}"
+else 
+    echo -e "${RED}FAILURE${NC}"
+    exit 1
+fi

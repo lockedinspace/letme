@@ -1,4 +1,3 @@
-# when user authenticates with credentials-process and mfa, I generate an entry in .letme-db which grants that account  a access to the (letme ob $account --v1) command without mfa prompt during the value specified in general.session_duration
 {
     "account": "adaral",
     "lastRequest": "21:50"

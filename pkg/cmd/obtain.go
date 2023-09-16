@@ -15,6 +15,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"strconv"
 )
 
 var obtainCmd = &cobra.Command{
@@ -41,11 +42,12 @@ within the AWS cli binary.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// grab and save fields from the config file into variables
-		profile := utils.ConfigFileResultString("Aws_source_profile")
-		region := utils.ConfigFileResultString("Aws_source_profile_region")
-		table := utils.ConfigFileResultString("Dynamodb_table")
-		sessionName := utils.ConfigFileResultString("Session_name")
-
+		profile := utils.ConfigFileResultString("Aws_source_profile").(string)
+		region := utils.ConfigFileResultString("Aws_source_profile_region").(string)
+		table := utils.ConfigFileResultString("Dynamodb_table").(string)
+		sessionName := utils.ConfigFileResultString("Session_name").(string)
+		sessionDuration, err := strconv.ParseInt(utils.ConfigFileResultString("Session_duration").(string), 10, 64)
+		utils.CheckAndReturnError(err)
 		// grab credentials process flags
 		credentialProcess, _ := cmd.Flags().GetBool("credential-process")
 		localCredentialProcessFlagV1, _ := cmd.Flags().GetBool("v1")
@@ -59,7 +61,7 @@ within the AWS cli binary.`,
 		} 
 
 		// grab the mfa arn from the config, create a new aws session and try to get credentials
-		serialMfa := utils.ConfigFileResultString("Mfa_arn")
+		serialMfa := utils.ConfigFileResultString("Mfa_arn").(string)
 		sesAws, err := session.NewSession(&aws.Config{
 			Region:      aws.String(region),
 			Credentials: credentials.NewSharedCredentials("", profile),
@@ -92,28 +94,14 @@ within the AWS cli binary.`,
 			}
 
 		}
-		// if localCredentialsProcessFlag {
-		// 	svc2022 := sts.New(sesAws)
-		// 	abu := "arn:aws:iam::820327185430:role/SwitchNubersia"
-		// 	pab := "pepe"
-		// 	result, err := svc2022.AssumeRole(&sts.AssumeRoleInput{
-		// 		RoleArn:         &abu,
-		// 		RoleSessionName: &pab,
-		// 	})
-		// 	utils.CheckAndReturnError(err)
-		// 	fmt.Printf(utils.CredentialsProcessOutput(*result.Credentials.AccessKeyId, *result.Credentials.SecretAccessKey, *result.Credentials.SessionToken, *result.Credentials.Expiration))
-		// 	os.Exit(99)			
-		// } else {
-		// 	fmt.Println("adios")
-		// 	os.Exit(98)
-		// }
-		// check if the .letme-cache file exists, if not, queries must be satisfied through internet
+
 		// struct to map data
 		type account struct {
 			Id     int      `json:"id"`
 			Name   string   `json:"name"`
 			Role   []string `json:"role"`
 			Region []string `json:"region"`
+			Session_duration int64 `json:"session_duration"`
 		}
 
 		// creating a new aws session and prepare a dynamodb query
@@ -151,11 +139,10 @@ within the AWS cli binary.`,
 				accountRegion = item.Region[0]
 			}
 		}
-
+		
 		// check if the account is the same as the provided by the user
 		if accountName == args[0] {
 			utils.CheckAccountDatabaseFile(args[0])
-			os.Exit(99)
 			svc := sts.New(sesAws)
 			var result *sts.AssumeRoleOutput
 			var tempCreds credentials.Value
@@ -178,6 +165,7 @@ within the AWS cli binary.`,
 								RoleSessionName: &sessionName,
 								SerialNumber:    &serialMfa,
 								TokenCode:       &inlineTokenMfa,
+								DurationSeconds: &sessionDuration,
 							})
 							utils.CheckAndReturnError(err)
 							tempCreds.AccessKeyID = *result.Credentials.AccessKeyId
@@ -195,6 +183,7 @@ within the AWS cli binary.`,
 								RoleSessionName: &sessionName,
 								SerialNumber:    &serialMfa,
 								TokenCode:       &tokenMfa,
+								DurationSeconds: &sessionDuration,
 							})
 							utils.CheckAndReturnError(err)
 							tempCreds.AccessKeyID = *result.Credentials.AccessKeyId
@@ -210,6 +199,7 @@ within the AWS cli binary.`,
 						result, err = svcChain.AssumeRole(&sts.AssumeRoleInput{
 							RoleArn:         &roleToAssumeArn[i],
 							RoleSessionName: &sessionName,
+							DurationSeconds: &sessionDuration,
 						})
 						utils.CheckAndReturnError(err)
 						if localCredentialProcessFlagV1 {
@@ -232,6 +222,7 @@ within the AWS cli binary.`,
 						result, err = svc.AssumeRole(&sts.AssumeRoleInput{
 							RoleArn:         &roleToAssumeArn[i],
 							RoleSessionName: &sessionName,
+							DurationSeconds: &sessionDuration,
 						})
 						utils.CheckAndReturnError(err)
 						tempCreds.AccessKeyID = *result.Credentials.AccessKeyId
@@ -262,6 +253,7 @@ within the AWS cli binary.`,
 						RoleSessionName: &sessionName,
 						SerialNumber:    &serialMfa,
 						TokenCode:       &inlineTokenMfa,
+						DurationSeconds: &sessionDuration,
 					})
 					utils.CheckAndReturnError(err)
 					if localCredentialProcessFlagV1 {
@@ -280,6 +272,7 @@ within the AWS cli binary.`,
 						RoleSessionName: &sessionName,
 						SerialNumber:    &serialMfa,
 						TokenCode:       &tokenMfa,
+						DurationSeconds: &sessionDuration,
 					})
 					utils.CheckAndReturnError(err)
 					if localCredentialProcessFlagV1 {
@@ -291,6 +284,7 @@ within the AWS cli binary.`,
 				result, err = svc.AssumeRole(&sts.AssumeRoleInput{
 					RoleArn:         &singleRoleToAssumeArn,
 					RoleSessionName: &sessionName,
+					DurationSeconds: &sessionDuration,
 				})
 				utils.CheckAndReturnError(err)
 				if localCredentialProcessFlagV1 {

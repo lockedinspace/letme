@@ -39,9 +39,9 @@ var listCmd = &cobra.Command{
 		localFlag, _ := cmd.Flags().GetBool("local")
 
 		// grab and save fields from the config file into variables
-		profile := utils.ConfigFileResultString("Aws_source_profile")
-		region := utils.ConfigFileResultString("Aws_source_profile_region")
-		table := utils.ConfigFileResultString("Dynamodb_table")
+		profile := utils.ConfigFileResultString("Aws_source_profile").(string)
+		region := utils.ConfigFileResultString("Aws_source_profile_region").(string)
+		table := utils.ConfigFileResultString("Dynamodb_table").(string)
 
 		// create a new aws session and try to get credentials
 		sesAws, err := session.NewSession(&aws.Config{

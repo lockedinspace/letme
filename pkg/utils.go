@@ -21,6 +21,7 @@ type GeneralParams struct {
 	Dynamodb_table            string
 	Mfa_arn                   string `toml:"mfa_arn,omitempty"`
 	Session_name              string
+	Session_duration		  string    `toml:"session_duration,omitempty"`
 }
 
 // Struct which represents the cache file toml keys
@@ -40,6 +41,7 @@ func CheckConfigFile(path string) bool {
 			Dynamodb_table            string
 			Mfa_arn                   string `toml:"mfa_arn,omitempty"`
 			Session_name              string
+			Session_duration		  string    `toml:"session_duration,omitempty"`
 		}
 	}
 	var conf config
@@ -74,12 +76,13 @@ func TemplateConfigFile() string {
 		buf = new(bytes.Buffer)
 	)
 	err := toml.NewEncoder(buf).Encode(map[string]interface{}{
-		"general": map[string]string{
-			"aws_source_profile":        "",
-			"aws_source_profile_region": "",
-			"dynamodb_table":            "",
-			"mfa_arn":                   "",
-			"session_name":              "",
+		"general": map[string]interface{}{
+			"aws_source_profile":        "default",
+			"aws_source_profile_region": "eu-west-3",
+			"dynamodb_table":            "customers",
+			"mfa_arn":                   "arn:aws:iam::3301048219:mfa/user",
+			"session_name":              "user_letme",
+			"session_duration":			 "3600",
 		},
 	})
 	CheckAndReturnError(err)
@@ -111,13 +114,13 @@ func GetHomeDirectory() string {
 }
 
 // Parses letme-config file and returns one field at a time
-func ConfigFileResultString(field string) string {
+func ConfigFileResultString(field string) interface{} {
 	type structUnmarshal = GeneralParams
 	type general map[string]structUnmarshal
 	var generalConfig general
 	_, err := toml.DecodeFile(GetHomeDirectory()+"/.letme/letme-config", &generalConfig)
 	CheckAndReturnError(err)
-	var exportedField string
+	var exportedField interface{}
 	for _, name := range []string{"general"} {
 		a := generalConfig[name]
 		r := reflect.ValueOf(a)

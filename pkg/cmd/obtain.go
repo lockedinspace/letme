@@ -14,8 +14,8 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"regexp"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 var obtainCmd = &cobra.Command{
@@ -51,14 +51,14 @@ within the AWS cli binary.`,
 		// grab credentials process flags
 		credentialProcess, _ := cmd.Flags().GetBool("credential-process")
 		localCredentialProcessFlagV1, _ := cmd.Flags().GetBool("v1")
-		
+
 		// overwrite the session name variable if the user provides it
 		if len(sessionName) == 0 && !localCredentialProcessFlagV1 {
 			fmt.Println("Using default session name: " + args[0] + "-letme-session")
 			sessionName = args[0] + "-letme-session"
 		} else if !localCredentialProcessFlagV1 {
 			fmt.Println("Assuming role with the following session name: " + sessionName)
-		} 
+		}
 
 		// grab the mfa arn from the config, create a new aws session and try to get credentials
 		serialMfa := utils.ConfigFileResultString("Mfa_arn").(string)
@@ -97,11 +97,11 @@ within the AWS cli binary.`,
 
 		// struct to map data
 		type account struct {
-			Id     int      `json:"id"`
-			Name   string   `json:"name"`
-			Role   []string `json:"role"`
-			Region []string `json:"region"`
-			Session_duration int64 `json:"session_duration"`
+			Id               int      `json:"id"`
+			Name             string   `json:"name"`
+			Role             []string `json:"role"`
+			Region           []string `json:"region"`
+			Session_duration int64    `json:"session_duration"`
 		}
 
 		// creating a new aws session and prepare a dynamodb query
@@ -139,7 +139,7 @@ within the AWS cli binary.`,
 				accountRegion = item.Region[0]
 			}
 		}
-		
+
 		// check if the account is the same as the provided by the user
 		if accountName == args[0] {
 			utils.CheckAccountDatabaseFile(args[0])
@@ -359,7 +359,7 @@ within the AWS cli binary.`,
 					}
 					fmt.Printf("letme: use the argument '--profile " + accountName + "' to interact with the account.\n")
 
-					} else if !(strings.Contains(s, str) && strings.Contains(s, etr)) && strings.Contains(f, str) && strings.Contains(f, etr) {
+				} else if !(strings.Contains(s, str) && strings.Contains(s, etr)) && strings.Contains(f, str) && strings.Contains(f, etr) {
 					confFile2, err := os.OpenFile(utils.GetHomeDirectory()+"/.aws/config", os.O_RDWR|os.O_TRUNC, 0600)
 					utils.CheckAndReturnError(err)
 					fmt.Fprintf(confFile2, "%v", utils.AwsReplaceBlock(f, accountName))
@@ -392,7 +392,7 @@ within the AWS cli binary.`,
 			fmt.Printf("letme: account '" + args[0] + "' not found on your dynamodb table '" + table + "'. Are you pointing to the correct table?\n")
 			os.Exit(1)
 		}
-		
+
 	},
 }
 

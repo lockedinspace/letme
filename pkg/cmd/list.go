@@ -32,7 +32,7 @@ var listCmd = &cobra.Command{
 		}
 	},
 	Short: "List your accounts",
-	Long: `Lists all the AWS accounts and their main region.`,
+	Long:  `Lists all the AWS accounts and their main region.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// get local flag

@@ -21,7 +21,7 @@ type GeneralParams struct {
 	Dynamodb_table            string
 	Mfa_arn                   string `toml:"mfa_arn,omitempty"`
 	Session_name              string
-	Session_duration		  string    `toml:"session_duration,omitempty"`
+	Session_duration          string `toml:"session_duration,omitempty"`
 }
 
 // Struct which represents the cache file toml keys
@@ -41,7 +41,7 @@ func CheckConfigFile(path string) bool {
 			Dynamodb_table            string
 			Mfa_arn                   string `toml:"mfa_arn,omitempty"`
 			Session_name              string
-			Session_duration		  string    `toml:"session_duration,omitempty"`
+			Session_duration          string `toml:"session_duration,omitempty"`
 		}
 	}
 	var conf config
@@ -82,7 +82,7 @@ func TemplateConfigFile() string {
 			"dynamodb_table":            "customers",
 			"mfa_arn":                   "arn:aws:iam::3301048219:mfa/user",
 			"session_name":              "user_letme",
-			"session_duration":			 "3600",
+			"session_duration":          "3600",
 		},
 	})
 	CheckAndReturnError(err)
@@ -274,18 +274,18 @@ func CheckAccountLocally(account string) string {
 
 func CredentialsProcessOutput(accessKeyID string, secretAccessKey string, sessionToken string, expirationTime time.Time) string {
 	type CredentialsProcess struct {
-		Version			int
-		AccessKeyId   	string
+		Version         int
+		AccessKeyId     string
 		SecretAccessKey string
-		SessionToken	string
-		Expiration		time.Time
+		SessionToken    string
+		Expiration      time.Time
 	}
 	group := CredentialsProcess{
-		Version:     		1,
-		AccessKeyId:   		accessKeyID,
-		SecretAccessKey: 	secretAccessKey,
-		SessionToken: 		sessionToken,
-		Expiration: 		expirationTime,
+		Version:         1,
+		AccessKeyId:     accessKeyID,
+		SecretAccessKey: secretAccessKey,
+		SessionToken:    sessionToken,
+		Expiration:      expirationTime,
 	}
 	b, err := json.Marshal(group)
 	CheckAndReturnError(err)
@@ -298,16 +298,36 @@ func CredentialsProcessOutput(accessKeyID string, secretAccessKey string, sessio
 func CheckAccountDatabaseFile(accountName string) {
 	databaseFileWriter, err := os.OpenFile(GetHomeDirectory()+"/.letme/.letme-db", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	CheckAndReturnError(err)
-	type accountData struct {
-		Account     string `json:"account"`
-		LastRequest int64 `json:"lastRequest"`
-	}
-	account := accountData{
-		Account:     accountName,
-		LastRequest: time.Now().Unix(),
-	}
-	b, err := json.Marshal(account)
+	databaseFileReader, err := os.ReadFile(GetHomeDirectory() + "/.letme/.letme-db")
 	CheckAndReturnError(err)
+	fi, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-db")
+	CheckAndReturnError(err)
+	if !json.Valid([]byte(databaseFileReader)) && fi.Size() > 0 {
+		fmt.Printf("letme: " + GetHomeDirectory() + "/.letme/.letme-db" + " is not JSON valid.\n")
+		os.Exit(1)
+	}
+	type Dataset struct {
+		LastRequest int64 `json:"lastRequest"`
+	 	Expiry		int64 `json:"expiry"`
+	}
+	type Account struct {
+		Account     string `json:"account"`
+		Dataset	    Dataset `json:"data"`
+	}
+
+	var idents []Account
+
+	CheckAndReturnError(err)
+	if fi.Size() > 0 {
+		err = json.Unmarshal(databaseFileReader, &idents)
+		CheckAndReturnError(err)
+		err = os.Truncate(GetHomeDirectory()+"/.letme/.letme-db", 0)
+		CheckAndReturnError(err)
+	}
+	idents = append(idents, Account{accountName, Dataset{time.Now().Unix(), time.Now().Unix()}})
+	b, err := json.MarshalIndent(idents, "", "  ")
+	CheckAndReturnError(err)
+
 	if _, err = databaseFileWriter.WriteString(string(b)); err != nil {
 		CheckAndReturnError(err)
 		defer databaseFileWriter.Close()

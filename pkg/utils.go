@@ -14,47 +14,16 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	dynamodbTypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/aws/aws-sdk-go-v2/service/iam"
-
-	"gopkg.in/ini.v1"
 )
 
-// Expected keys in letme-config file
-var ExpectedKeys = map[string]bool{
-	"aws_source_profile":        true,
-	"aws_source_profile_region": true,
-	"dynamodb_table":            true,
-	"mfa_arn":                   true,
-	"session_name":              true,
-	"session_duration":          true,
-}
-
-// Mandatory keys in letme-config file
-var MandatoryKeys = []string{
-	"aws_source_profile",
-	"aws_source_profile_region",
-	"dynamodb_table",
-}
-
-type Context struct {
-	ActiveContext string `ini:"active_context"`
-}
-
-type LetmeContext struct {
-	AwsSourceProfile       string `ini:"aws_source_profile"`
-	AwsSourceProfileRegion string `ini:"aws_source_profile_region"`
-	AwsDynamoDbTable       string `ini:"dynamodb_table"`
-	AwsMfaArn              string `ini:"mfa_arn"`
-	AwsSessionName         string `ini:"session_name"`
-	AwsSessionDuration     int32  `ini:"session_duration"`
+// Struct which represents the config-file toml keys
+type GeneralParams struct {
+	Aws_source_profile        string
+	Aws_source_profile_region string `toml:"aws_source_profile_region,omitempty"`
+	Dynamodb_table            string
+	Mfa_arn                   string `toml:"mfa_arn,omitempty"`
+	Session_name              string
+	Session_duration          string `toml:"session_duration,omitempty"`
 }
 
 type DynamoDbAccountConfig struct {
@@ -76,14 +45,18 @@ type ProfileCredential struct {
 
 // Verify if the config-file respects the struct LetmeContext
 func CheckConfigFile(path string) bool {
-	filePath := GetHomeDirectory() + "/.letme/letme-config"
-
-	// Check if the file exists
-	if _, err := os.Stat(filePath); err != nil {
-		CheckAndReturnError(err)
+	type config struct {
+		General struct {
+			Aws_source_profile        string
+			Aws_source_profile_region string `toml:"aws_source_profile_region,omitempty"`
+			Dynamodb_table            string
+			Mfa_arn                   string `toml:"mfa_arn,omitempty"`
+			Session_name              string
+			Session_duration          string `toml:"session_duration,omitempty"`
+		}
 	}
-
-	config, err := ini.Load(filePath)
+	var conf config
+	md, err := toml.DecodeFile(path, &conf)
 	CheckAndReturnError(err)
 
 	sections := config.Sections()
@@ -125,52 +98,19 @@ func CheckAndReturnError(err error) {
 }
 
 // Marshalls data into a toml file (config-file)
-func TemplateConfigFile(stdout bool) {
-	template := ini.Empty()
-
-	section, err := template.NewSection("default")
-	CheckAndReturnError(err)
-
-	data := &LetmeContext{
-		AwsSourceProfile:       "default",
-		AwsSourceProfileRegion: "eu-west-3",
-		AwsDynamoDbTable:       "customers",
-		AwsMfaArn:              "arn:aws:iam::4002019901:mfa/user",
-		AwsSessionDuration:     3600,
-		AwsSessionName:         "user_letme",
-	}
-
-	err = section.ReflectFrom(data)
-	CheckAndReturnError(err)
-
-	if stdout {
-		_, err = template.WriteTo(os.Stdout)
-		CheckAndReturnError(err)
-		os.Exit(1)
-	} else {
-		fileName := "letme-config"
-		homeDir := GetHomeDirectory()
-		configFile, err := os.Create(filepath.Join(homeDir+"/.letme", filepath.Base(fileName)))
-		CheckAndReturnError(err)
-		defer configFile.Close()
-		_, err = template.WriteTo(configFile)
-		CheckAndReturnError(err)
-	}
-}
-
-func mfaArnInput(awsProfile string, awsRegion string) string{
-	var mfaArn string
-	mfaArnRegex := `^arn:aws:iam::[0-9]{12}:mfa\/[\S]+$`
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(awsProfile), config.WithRegion(awsRegion))
-	CheckAndReturnError(err)
-
-	sesIam := iam.NewFromConfig(cfg)
-
-	currentUser, err := sesIam.GetUser(context.TODO(), &iam.GetUserInput{})
-	CheckAndReturnError(err)
-
-	iamResp, err := sesIam.ListMFADevices(context.TODO(), &iam.ListMFADevicesInput{
-		UserName: currentUser.User.UserName,
+func TemplateConfigFile() string {
+	var (
+		buf = new(bytes.Buffer)
+	)
+	err := toml.NewEncoder(buf).Encode(map[string]interface{}{
+		"general": map[string]interface{}{
+			"aws_source_profile":        "default",
+			"aws_source_profile_region": "eu-west-3",
+			"dynamodb_table":            "customers",
+			"mfa_arn":                   "arn:aws:iam::3301048219:mfa/user",
+			"session_name":              "user_letme",
+			"session_duration":          "3600",
+		},
 	})
 	CheckAndReturnError(err)
 
@@ -446,7 +386,19 @@ type CredentialsProcess struct {
 // Return aws credentials following the credentials_process standard
 // https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sourcing-external.html
 func CredentialsProcessOutput(accessKeyID string, secretAccessKey string, sessionToken string, expirationTime time.Time) string {
+	type CredentialsProcess struct {
+		Version         int
+		AccessKeyId     string
+		SecretAccessKey string
+		SessionToken    string
+		Expiration      time.Time
+	}
 	group := CredentialsProcess{
+		Version:         1,
+		AccessKeyId:     accessKeyID,
+		SecretAccessKey: secretAccessKey,
+		SessionToken:    sessionToken,
+		Expiration:      expirationTime,
 		Version:         1,
 		AccessKeyId:     accessKeyID,
 		SecretAccessKey: secretAccessKey,
@@ -478,548 +430,34 @@ func DatabaseFile(accountName string, sessionDuration int32, v1Credentials strin
 	CheckAndReturnError(err)
 	fi, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-db")
 	CheckAndReturnError(err)
+	if !json.Valid([]byte(databaseFileReader)) && fi.Size() > 0 {
+		fmt.Printf("letme: " + GetHomeDirectory() + "/.letme/.letme-db" + " is not JSON valid.\n")
+		os.Exit(1)
+	}
+	type Dataset struct {
+		LastRequest int64 `json:"lastRequest"`
+	 	Expiry		int64 `json:"expiry"`
+	}
+	type Account struct {
+		Account     string `json:"account"`
+		Dataset	    Dataset `json:"data"`
+	}
+
 	var idents []Account
+
+	CheckAndReturnError(err)
 	if fi.Size() > 0 {
-		//check if the json is valid, but ensure that the file has content
-		if !json.Valid([]byte(databaseFileReader)) && fi.Size() > 0 {
-			fmt.Printf("letme: " + GetHomeDirectory() + "/.letme/.letme-db" + " is not JSON valid. Remove the file and try again.\n")
-			os.Exit(1)
-		}
 		err = json.Unmarshal(databaseFileReader, &idents)
 		CheckAndReturnError(err)
 		err = os.Truncate(GetHomeDirectory()+"/.letme/.letme-db", 0)
 		CheckAndReturnError(err)
-		for i := range idents {
-			//when file is populated and client exist, just update fields
-			if idents[i].Account.Name == accountName {
-				idents[i].Account.LastRequest = time.Now().Unix()
-				idents[i].Account.Expiry = time.Now().Add(time.Second * time.Duration(sessionDuration)).Unix()
-				idents[i].Account.V1Credentials = v1Credentials
-				idents[i].Account.AuthMethod = authMethod
-				b, err := json.MarshalIndent(idents, "", "  ")
-				CheckAndReturnError(err)
-
-				if _, err = databaseFileWriter.WriteString(string(b)); err != nil {
-					CheckAndReturnError(err)
-					defer databaseFileWriter.Close()
-				}
-				return
-			}
-		}
-		//when file is populated but client does not exist
-		idents = append(idents, Account{Dataset{accountName, time.Now().Unix(), time.Now().Add(time.Second * time.Duration(sessionDuration)).Unix(), authMethod, v1Credentials}})
-		b, err := json.MarshalIndent(idents, "", "  ")
-		CheckAndReturnError(err)
-
-		if _, err = databaseFileWriter.WriteString(string(b)); err != nil {
-			CheckAndReturnError(err)
-			defer databaseFileWriter.Close()
-		}
-		//when file does not exist neither the client
-	} else if fi.Size() == 0 {
-		idents = append(idents, Account{Dataset{accountName, time.Now().Unix(), time.Now().Add(time.Second * time.Duration(sessionDuration)).Unix(), authMethod, v1Credentials}})
-		b, err := json.MarshalIndent(idents, "", "  ")
-		CheckAndReturnError(err)
-
-		if _, err = databaseFileWriter.WriteString(string(b)); err != nil {
-			CheckAndReturnError(err)
-			defer databaseFileWriter.Close()
-		}
 	}
-}
-
-// Compare the current local time with the expiry field in the .letme-db file. If current time has not yet surpassed
-// expiry time, return true. Else, return false indicating new credentials need to be requested.
-func CheckAccountAvailability(accountName string) bool {
-	if _, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-db"); err == nil {
-		databaseFileReader, err := os.ReadFile(GetHomeDirectory() + "/.letme/.letme-db")
-		CheckAndReturnError(err)
-		fi, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-db")
-		CheckAndReturnError(err)
-		if !json.Valid([]byte(databaseFileReader)) && fi.Size() > 0 {
-			fmt.Printf("letme: " + GetHomeDirectory() + "/.letme/.letme-db" + " is not JSON valid. Remove the file and try again.\n")
-			os.Exit(1)
-		}
-		var idents []Account
-		json.Unmarshal(databaseFileReader, &idents) //should really check with _, err
-		for i := range idents {
-			if idents[i].Account.Name == accountName {
-				t1 := time.Now().Unix()
-				t2 := idents[i].Account.Expiry
-				t3 := t2 - t1
-				if t3 <= 0 {
-					return false
-				} else {
-					return true
-				}
-			}
-		}
-	} else {
-		_, err := os.OpenFile(GetHomeDirectory()+"/.letme/.letme-db", os.O_CREATE, 0600)
-		CheckAndReturnError(err)
-	}
-	return false
-}
-
-// Check if the account to retrieve stored credentials exist, if true, return the credentials to stdout
-func ReturnAccountCredentials(accountName string) map[string]string {
-	databaseFileReader, err := os.ReadFile(GetHomeDirectory() + "/.letme/.letme-db")
-	CheckAndReturnError(err)
-	var idents []Account
-	var result string
-	m := make(map[string]string)
-	err = json.Unmarshal(databaseFileReader, &idents)
-	CheckAndReturnError(err)
-	for i := range idents {
-		if idents[i].Account.Name == accountName {
-			result = idents[i].Account.V1Credentials
-			data := CredentialsProcess{}
-			json.Unmarshal([]byte(result), &data)
-			m["AccessKeyId"] = data.AccessKeyId
-			m["SecretAccessKey"] = data.SecretAccessKey
-			m["SessionToken"] = data.SessionToken
-		}
-	}
-	return m
-}
-
-// Remove an account from the database file
-func RemoveAccountFromDatabaseFile(accountName string) {
-	jsonData, err := os.ReadFile(GetHomeDirectory() + "/.letme/.letme-db")
-	CheckAndReturnError(err)
-	// Unmarshal JSON data into a slice of maps
-	var data []map[string]interface{}
-	if err := json.Unmarshal([]byte(jsonData), &data); err != nil {
-		CheckAndReturnError(err)
-	}
-
-	// Iterate over each object in the slice
-	for i, obj := range data {
-		// Check if the "name" field of the "account" object is "adaral"
-		if name, ok := obj["account"].(map[string]interface{})["name"].(string); ok && name == accountName {
-			// Remove the object from the slice
-			data = append(data[:i], data[i+1:]...)
-			break // Break after removing to avoid index out of range error
-		}
-	}
-
-	updatedJsonData, err := json.MarshalIndent(data, "", "  ")
+	idents = append(idents, Account{accountName, Dataset{time.Now().Unix(), time.Now().Unix()}})
+	b, err := json.MarshalIndent(idents, "", "  ")
 	CheckAndReturnError(err)
 
-	// Write the prettified JSON data to the file /test.json
-	if err := os.WriteFile(GetHomeDirectory()+"/.letme/.letme-db", updatedJsonData, 0600); err != nil {
+	if _, err = databaseFileWriter.WriteString(string(b)); err != nil {
 		CheckAndReturnError(err)
+		defer databaseFileWriter.Close()
 	}
-}
-
-func AwsCredsFileReadV2() *ini.File {
-	awsCredentialsFile, err := ini.Load(GetHomeDirectory() + "/.aws/credentials")
-	CheckAndReturnError(err)
-	return awsCredentialsFile
-}
-
-func AwsConfigFileReadV2() *ini.File {
-	awsCredentialsFile, err := ini.Load(GetHomeDirectory() + "/.aws/config")
-	CheckAndReturnError(err)
-	return awsCredentialsFile
-}
-
-
-func LetmeConfigCreate() {
-	filePath := GetHomeDirectory() + "/.letme/letme-config"
-	_, err := os.Stat(filePath)
-
-	if os.IsNotExist(err) {
-		fmt.Println("here")
-		letmeConfigFileCreate, err := os.Create(filePath)
-		CheckAndReturnError(err)
-		defer letmeConfigFileCreate.Close()
-	} else {
-		CheckAndReturnError(err)
-	}
-}
-
-func LetmeConfigRead() *ini.File {
-
-	filePath := GetHomeDirectory() + "/.letme/letme-config"
-	_, err := os.Stat(filePath)
-
-	if os.IsNotExist(err) {
-		letmeConfigFileCreate, err := os.Create(filePath)
-		CheckAndReturnError(err)
-		defer letmeConfigFileCreate.Close()
-	}
-
-	if err != nil && !os.IsNotExist(err) {
-		CheckAndReturnError(err)
-	}
-
-	letmeConfigFile, err := ini.Load(filePath)
-	CheckAndReturnError(err)
-
-	return letmeConfigFile
-}
-
-func LoadAwsCredentials(profileName string, profileCredential ProfileCredential) {
-	credentialsFile := AwsCredsFileReadV2()
-
-	credentialsSection := credentialsFile.Section(profileName)
-	credentialsSection.Comment = "letme managed"
-
-	if err := credentialsSection.ReflectFrom(&profileCredential); err != nil {
-		CheckAndReturnError(err)
-	}
-
-	if err := credentialsFile.SaveTo(GetHomeDirectory() + "/.aws/credentials"); err != nil {
-		CheckAndReturnError(err)
-	}
-}
-
-func LoadAwsConfig(profileName string, profileConfig ProfileConfig) {
-	configFile := AwsConfigFileReadV2()
-
-	configSection := configFile.Section("profile " + profileName)
-	configSection.Comment = "letme managed"
-	if err := configSection.ReflectFrom(&profileConfig); err != nil {
-		CheckAndReturnError(err)
-	}
-	if err := configFile.SaveTo(GetHomeDirectory() + "/.aws/config"); err != nil {
-		CheckAndReturnError(err)
-	}
-}
-
-// Create the .letme-usersettings file which holds the current context and more
-func UpdateContext(context string) {
-	filePath := GetHomeDirectory() + "/.letme/.letme-usersettings"
-
-	// Check if the file exists
-	if _, err := os.Stat(filePath); err == nil {
-		// File exists, read the current content
-		content, err := ini.Load(filePath)
-
-		if err != nil {
-			CheckAndReturnError(err)
-		}
-
-		// Reads "context" section and updates "active_context" field
-		contextSection := content.Section("context")
-		err = contextSection.ReflectFrom(&Context{
-			ActiveContext: context,
-		})
-
-		if err != nil {
-			CheckAndReturnError(err)
-		}
-
-		// Saves the updated data onto the file
-		content.SaveTo(filePath)
-
-	} else if os.IsNotExist(err) {
-		userSettings, err := os.Create(filePath)
-		CheckAndReturnError(err)
-		defer userSettings.Close()
-		content := ini.Empty()
-		contextSection := content.Section("context")
-		err = contextSection.ReflectFrom(&Context{
-			ActiveContext: context,
-		})
-		CheckAndReturnError(err)
-		_, err = content.WriteTo(userSettings)
-		CheckAndReturnError(err)
-		// An unexpected error occurred
-	} else {
-		CheckAndReturnError(err)
-	}
-}
-
-func GetCurrentContext() string {
-	filePath := GetHomeDirectory() + "/.letme/.letme-usersettings"
-
-	// Check if the file exists if not exists returns "general"
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return "general"
-	}
-	// Read the content of the file
-	content, err := ini.Load(filePath)
-	content.BlockMode = false
-
-	if err != nil {
-		CheckAndReturnError(err)
-	}
-
-	// Maps "context" section to settings variable and returns the active context
-	settings := new(Context)
-	section, err := content.GetSection("context")
-	CheckAndReturnError(err)
-	if err := section.MapTo(&settings); err != nil {
-		CheckAndReturnError(err)
-	}
-
-	return settings.ActiveContext
-}
-
-func GetAvalaibleContexts() []string {
-	filePath := GetHomeDirectory() + "/.letme/letme-config"
-	content, err := ini.Load(filePath)
-	// content.BlockMode = false
-	if err != nil {
-		CheckAndReturnError(err)
-	}
-
-	sections := content.SectionStrings()
-	sortedSections := make([]string, 0, len(sections)-1)
-	for _, section := range sections {
-		if section == "DEFAULT" {
-			continue
-		}
-		sortedSections = append(sortedSections, section)
-	}
-	sort.Strings(sortedSections)
-	return sortedSections
-}
-
-func GetAccount(AwsDynamoDbTable string, cfg aws.Config, profileName string) *DynamoDbAccountConfig {
-	sesAwsDynamoDb := dynamodb.NewFromConfig(cfg)
-
-	account := new(DynamoDbAccountConfig)
-
-	resp, err := sesAwsDynamoDb.GetItem(context.TODO(), &dynamodb.GetItemInput{
-		TableName: aws.String(AwsDynamoDbTable),
-		Key:       map[string]dynamodbTypes.AttributeValue{"name": &dynamodbTypes.AttributeValueMemberS{Value: profileName}},
-	})
-	CheckAndReturnError(err)
-	err = attributevalue.UnmarshalMap(resp.Item, &account)
-	CheckAndReturnError(err)
-
-	return account
-}
-
-func GetSortedTable(AwsDynamoDbTable string, cfg aws.Config) {
-	sesAwsDynamoDb := dynamodb.NewFromConfig(cfg)
-	resp, err := sesAwsDynamoDb.Scan(context.TODO(), &dynamodb.ScanInput{
-		TableName: aws.String(AwsDynamoDbTable),
-	})
-	CheckAndReturnError(err)
-
-	sorted := make([]string, 0, len(resp.Items))
-	var nameLengths []int
-	var w *tabwriter.Writer
-
-	for _, item := range resp.Items {
-		var account DynamoDbAccountConfig
-		err = attributevalue.UnmarshalMap(item, &account)
-		CheckAndReturnError(err)
-		sorted = append(sorted, account.Name+"\t"+account.Region[0])
-		nameLengths = append(nameLengths, len(account.Name))
-	}
-	sort.Ints(nameLengths)
-	sort.Strings(sorted)
-	w = tabwriter.NewWriter(os.Stdout, nameLengths[len(nameLengths)-1]+5, 200, 1, ' ', 0)
-
-	fmt.Fprintln(w, "NAME:\tMAIN REGION:")
-	fmt.Fprintln(w, "-----\t------------")
-	for _, id := range sorted {
-		fmt.Fprintln(w, id)
-		w.Flush()
-	}
-}
-
-func GetContextData(context string) *LetmeContext {
-	filePath := GetHomeDirectory() + "/.letme/letme-config"
-
-	// Check if the file exists
-	if _, err := os.Stat(filePath); err != nil {
-		CheckAndReturnError(err)
-	}
-
-	config, err := ini.Load(filePath)
-	CheckAndReturnError(err)
-
-	contextSection, err := config.GetSection(context)
-	CheckAndReturnError(err)
-
-	letmeContext := new(LetmeContext)
-	if err := contextSection.MapTo(&letmeContext); err != nil {
-		CheckAndReturnError(err)
-	}
-
-	return letmeContext
-}
-
-func AssumeRole(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa string, account *DynamoDbAccountConfig, renew bool, localCredentialProcessFlagV1 bool, authMethod string) (ProfileCredential, ProfileConfig) {
-	// If credentials not expired
-	if CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1 && !renew {
-		cachedCredentials := ReturnAccountCredentials(account.Name)
-		profileCredential := ProfileCredential{
-			AccessKey:    cachedCredentials["AccessKeyId"],
-			SecretKey:    cachedCredentials["SecretAccessKey"],
-			SessionToken: cachedCredentials["SessionToken"],
-		}
-
-		profileConfig := ProfileConfig{
-			Output: "json",
-			Region: account.Region[0],
-		}
-
-		fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
-		return profileCredential, profileConfig
-	}
-
-	sesAwsSts := sts.NewFromConfig(cfg)
-	var input *sts.AssumeRoleInput
-
-	switch {
-	case len(letmeContext.AwsMfaArn) > 0 && len(inlineTokenMfa) > 0:
-		input = &sts.AssumeRoleInput{
-			RoleArn:         &account.Role[0],
-			RoleSessionName: &letmeContext.AwsSessionName,
-			SerialNumber:    &letmeContext.AwsMfaArn,
-			TokenCode:       &inlineTokenMfa,
-			DurationSeconds: &letmeContext.AwsSessionDuration,
-		}
-	case len(letmeContext.AwsMfaArn) > 0 && len(inlineTokenMfa) <= 0:
-		fmt.Printf("Enter MFA one time pass code: ")
-		var tokenMfa string
-		fmt.Scanln(&tokenMfa)
-		input = &sts.AssumeRoleInput{
-			RoleArn:         &account.Role[0],
-			RoleSessionName: &letmeContext.AwsSessionName,
-			SerialNumber:    &letmeContext.AwsMfaArn,
-			TokenCode:       &tokenMfa,
-			DurationSeconds: &letmeContext.AwsSessionDuration,
-		}
-	default:
-		input = &sts.AssumeRoleInput{
-			RoleArn:         &account.Role[0],
-			RoleSessionName: &letmeContext.AwsSessionName,
-			DurationSeconds: &letmeContext.AwsSessionDuration,
-		}
-	}
-
-	resp, err := sesAwsSts.AssumeRole(context.TODO(), input)
-	CheckAndReturnError(err)
-
-	profileCredential := ProfileCredential{
-		AccessKey:    *resp.Credentials.AccessKeyId,
-		SecretKey:    *resp.Credentials.SecretAccessKey,
-		SessionToken: *resp.Credentials.SessionToken,
-	}
-
-	profileConfig := ProfileConfig{
-		Output: "json",
-		Region: account.Region[0],
-	}
-	switch {
-	case localCredentialProcessFlagV1:
-		fmt.Printf(CredentialsProcessOutput(profileCredential.AccessKey, profileCredential.SecretKey, profileCredential.SessionToken, *resp.Credentials.Expiration))
-		os.Exit(0)
-	case renew || !CheckAccountAvailability(account.Name):
-		DatabaseFile(account.Name, letmeContext.AwsSessionDuration, CredentialsProcessOutput(profileCredential.AccessKey, profileCredential.SecretKey, profileCredential.SessionToken, *resp.Credentials.Expiration), authMethod) //only when we really authenticate against aws
-	}
-
-	return profileCredential, profileConfig
-}
-
-func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa string, account *DynamoDbAccountConfig, renew bool, localCredentialProcessFlagV1 bool, authMethod string) (ProfileCredential, ProfileConfig) {
-	// If credentials not expired
-	if CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1 && !renew{
-		cachedCredentials := ReturnAccountCredentials(account.Name)
-		profileCredential := ProfileCredential{
-			AccessKey:    cachedCredentials["AccessKeyId"],
-			SecretKey:    cachedCredentials["SecretAccessKey"],
-			SessionToken: cachedCredentials["SessionToken"],
-		}
-
-		profileConfig := ProfileConfig{
-			Output: "json",
-			Region: account.Region[0],
-		}
-
-		fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
-		return profileCredential, profileConfig
-	}
-
-	sesAwsSts := sts.NewFromConfig(cfg)
-	var input *sts.AssumeRoleInput
-	var output *sts.AssumeRoleOutput
-	var err error
-
-	fmt.Println("More than one role detected. Total hops:", len(account.Role))
-	for i := range account.Role {
-		fmt.Printf("[%v/%v]\n", i+1, len(account.Role))
-		switch {
-		// First hop with --inline-mfa flag
-		case i == 0 && len(letmeContext.AwsMfaArn) > 0 && len(inlineTokenMfa) > 0:
-			input = &sts.AssumeRoleInput{
-				RoleArn:         &account.Role[i],
-				RoleSessionName: &letmeContext.AwsSessionName,
-				SerialNumber:    &letmeContext.AwsMfaArn,
-				TokenCode:       &inlineTokenMfa,
-				DurationSeconds: &letmeContext.AwsSessionDuration,
-			}
-			output, err = sesAwsSts.AssumeRole(context.TODO(), input)
-			CheckAndReturnError(err)
-		// First hop with interactive MFA token
-		case i == 0 && len(letmeContext.AwsMfaArn) > 0 && len(inlineTokenMfa) <= 0:
-			var tokenMfa string
-			fmt.Printf("Enter MFA one time pass code: ")
-			fmt.Scanln(&tokenMfa)
-			input = &sts.AssumeRoleInput{
-				RoleArn:         &account.Role[i],
-				RoleSessionName: &letmeContext.AwsSessionName,
-				SerialNumber:    &letmeContext.AwsMfaArn,
-				TokenCode:       &tokenMfa,
-				DurationSeconds: &letmeContext.AwsSessionDuration,
-			}
-			output, err = sesAwsSts.AssumeRole(context.TODO(), input)
-			CheckAndReturnError(err)
-		// First hop without MFA
-		case i == 0:
-			input = &sts.AssumeRoleInput{
-				RoleArn:         &account.Role[i],
-				RoleSessionName: &letmeContext.AwsSessionName,
-				DurationSeconds: &letmeContext.AwsSessionDuration,
-			}
-			output, err = sesAwsSts.AssumeRole(context.TODO(), input)
-			CheckAndReturnError(err)
-		// Chained AssumneRoles with credentials from previous iterations
-		default:
-			cfg, err := config.LoadDefaultConfig(context.TODO(),
-				config.WithRegion(account.Region[0]),
-				config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
-					Value: aws.Credentials{
-						AccessKeyID: *output.Credentials.AccessKeyId, SecretAccessKey: *output.Credentials.SecretAccessKey, SessionToken: *output.Credentials.SessionToken,
-					},
-				}))
-			CheckAndReturnError(err)
-			sesChainedSts := sts.NewFromConfig(cfg)
-			input = &sts.AssumeRoleInput{
-				RoleArn:         &account.Role[i],
-				RoleSessionName: &letmeContext.AwsSessionName,
-				DurationSeconds: &letmeContext.AwsSessionDuration,
-			}
-			output, err = sesChainedSts.AssumeRole(context.TODO(), input)
-			CheckAndReturnError(err)
-		}
-	}
-
-	profileCredential := ProfileCredential{
-		AccessKey:    *output.Credentials.AccessKeyId,
-		SecretKey:    *output.Credentials.SecretAccessKey,
-		SessionToken: *output.Credentials.SessionToken,
-	}
-
-	profileConfig := ProfileConfig{
-		Output: "json",
-		Region: account.Region[0],
-	}
-
-	switch {
-	case localCredentialProcessFlagV1:
-		fmt.Printf(CredentialsProcessOutput(profileCredential.AccessKey, profileCredential.SecretKey, profileCredential.SessionToken, *output.Credentials.Expiration))
-		os.Exit(0)
-	case renew || !CheckAccountAvailability(account.Name):
-		DatabaseFile(account.Name, letmeContext.AwsSessionDuration, CredentialsProcessOutput(profileCredential.AccessKey, profileCredential.SecretKey, profileCredential.SessionToken, *output.Credentials.Expiration), authMethod) //only when we really authenticate against aws
-	}
-	return profileCredential, profileConfig
 }

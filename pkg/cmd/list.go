@@ -25,7 +25,7 @@ var listCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
-	Short: "List accounts",
+	Short: "List your accounts",
 	Long:  `Lists all the AWS accounts and their main region.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// get the current context

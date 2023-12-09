@@ -435,29 +435,50 @@ func DatabaseFile(accountName string, sessionDuration int32, v1Credentials strin
 		os.Exit(1)
 	}
 	type Dataset struct {
+		Name		string `json:"name"`
 		LastRequest int64 `json:"lastRequest"`
 	 	Expiry		int64 `json:"expiry"`
 	}
 	type Account struct {
-		Account     string `json:"account"`
-		Dataset	    Dataset `json:"data"`
+		Account     Dataset `json:"account"`
 	}
-
+	
 	var idents []Account
-
-	CheckAndReturnError(err)
 	if fi.Size() > 0 {
 		err = json.Unmarshal(databaseFileReader, &idents)
 		CheckAndReturnError(err)
 		err = os.Truncate(GetHomeDirectory()+"/.letme/.letme-db", 0)
 		CheckAndReturnError(err)
-	}
-	idents = append(idents, Account{accountName, Dataset{time.Now().Unix(), time.Now().Unix()}})
-	b, err := json.MarshalIndent(idents, "", "  ")
-	CheckAndReturnError(err)
+		for i := range idents {
+			if idents[i].Account.Name == accountName {
+				idents[i].Account.LastRequest = time.Now().Unix()
+				idents[i].Account.Expiry = time.Now().Unix()
+				b, err := json.MarshalIndent(idents, "", "  ")
+				CheckAndReturnError(err)
 
-	if _, err = databaseFileWriter.WriteString(string(b)); err != nil {
+				if _, err = databaseFileWriter.WriteString(string(b)); err != nil {
+					CheckAndReturnError(err)
+					defer databaseFileWriter.Close()
+				}
+				os.Exit(0)
+			} 
+		}
+		idents = append(idents, Account{Dataset{accountName, time.Now().Unix(), time.Now().Unix()}})
+		b, err := json.MarshalIndent(idents, "", "  ")
 		CheckAndReturnError(err)
-		defer databaseFileWriter.Close()
-	}
+
+		if _, err = databaseFileWriter.WriteString(string(b)); err != nil {
+			CheckAndReturnError(err)
+			defer databaseFileWriter.Close()
+		}
+	} else if fi.Size() == 0 {
+		idents = append(idents, Account{Dataset{accountName, time.Now().Unix(), time.Now().Unix()}})
+		b, err := json.MarshalIndent(idents, "", "  ")
+		CheckAndReturnError(err)
+
+		if _, err = databaseFileWriter.WriteString(string(b)); err != nil {
+			CheckAndReturnError(err)
+			defer databaseFileWriter.Close()
+		}
+	} 
 }

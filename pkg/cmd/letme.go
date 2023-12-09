@@ -11,7 +11,7 @@ import (
 	"runtime"
 )
 
-var currentVersion = "v0.1.6"
+var currentVersion = "v0.2.0"
 var versionPrettyName = "Refurbished beagle"
 var rootCmd = &cobra.Command{
 	Use:   "letme",

@@ -389,7 +389,7 @@ within the AWS cli binary.`,
 				os.Exit(1)
 			}
 		} else {
-			fmt.Printf("letme: account '" + args[0] + "' not found on your dynamodb table '" + table + "'. Are you pointing to the correct table?\n")
+			fmt.Printf("letme: account '" + args[0] + "' not found in your dynamodb table '" + table + "'. Are you pointing to the correct table?\n")
 			os.Exit(1)
 		}
 

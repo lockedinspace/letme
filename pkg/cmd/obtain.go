@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -35,10 +34,15 @@ var obtainCmd = &cobra.Command{
 Credentials will last 3600 seconds by default and can be used with the argument '--profile $ACCOUNT_NAME'
 within the AWS cli binary.`,
 	Args: cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		// get flags
-		inlineTokenMfa, _ := cmd.Flags().GetString("inline-mfa")
-		renew, _ := cmd.Flags().GetBool("renew")
+	Run: func(cmd *cobra.Command, args []string) {		
+		// grab and save fields from the config file into variables
+		profile := utils.ConfigFileResultString("general", "Aws_source_profile").(string)
+		region := utils.ConfigFileResultString("general", "Aws_source_profile_region").(string)
+		table := utils.ConfigFileResultString("general", "Dynamodb_table").(string)
+		sessionName := utils.ConfigFileResultString("general", "Session_name").(string)
+		sessionDuration := utils.ConfigFileResultString("general", "Session_duration").(int64)
+		//utils.CheckAndReturnError(err)
+		// grab credentials process flags
 		credentialProcess, _ := cmd.Flags().GetBool("credential-process")
 		localCredentialProcessFlagV1, _ := cmd.Flags().GetBool("v1")
 
@@ -51,7 +55,7 @@ within the AWS cli binary.`,
 		}
 
 		// grab the mfa arn from the config, create a new aws session and try to get credentials
-		serialMfa := utils.ConfigFileResultString("Mfa_arn").(string)
+		serialMfa := utils.ConfigFileResultString("general", "Mfa_arn").(string)
 		sesAws, err := session.NewSession(&aws.Config{
 			Region:      aws.String(region),
 			Credentials: credentials.NewSharedCredentials("", profile),
@@ -132,7 +136,7 @@ within the AWS cli binary.`,
 
 		// check if the account is the same as the provided by the user
 		if accountName == args[0] {
-			utils.CheckAccountDatabaseFile(args[0])
+			utils.CheckAccountDatabaseFile(args[0], sessionDuration)
 			svc := sts.New(sesAws)
 			var result *sts.AssumeRoleOutput
 			var tempCreds credentials.Value

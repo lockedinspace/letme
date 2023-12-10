@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -21,7 +20,7 @@ type GeneralParams struct {
 	Dynamodb_table            string
 	Mfa_arn                   string `toml:"mfa_arn,omitempty"`
 	Session_name              string
-	Session_duration          string `toml:"session_duration,omitempty"`
+	Session_duration          int64 `toml:"session_duration,omitempty"`
 }
 
 // Struct which represents the cache file toml keys
@@ -41,7 +40,7 @@ func CheckConfigFile(path string) bool {
 			Dynamodb_table            string
 			Mfa_arn                   string `toml:"mfa_arn,omitempty"`
 			Session_name              string
-			Session_duration          string `toml:"session_duration,omitempty"`
+			Session_duration          int64 `toml:"session_duration,omitempty"`
 		}
 	}
 	var conf config
@@ -114,21 +113,37 @@ func GetHomeDirectory() string {
 }
 
 // Parses letme-config file and returns one field at a time
-func ConfigFileResultString(field string) interface{} {
-	type structUnmarshal = GeneralParams
-	type general map[string]structUnmarshal
-	var generalConfig general
+func ConfigFileResultString(profile string, field string) interface{} {
+	var generalConfig map[string]GeneralParams
 	_, err := toml.DecodeFile(GetHomeDirectory()+"/.letme/letme-config", &generalConfig)
 	CheckAndReturnError(err)
-	var exportedField interface{}
-	for _, name := range []string{"general"} {
-		a := generalConfig[name]
-		r := reflect.ValueOf(a)
-		f := reflect.Indirect(r).FieldByName(field)
-		exportedField = string(f.String())
+	switch field {
+    case "Aws_source_profile":
+        return generalConfig[profile].Aws_source_profile
+    case "Aws_source_profile_region":
+        return generalConfig[profile].Aws_source_profile_region
+	case "Mfa_arn":
+        return generalConfig[profile].Mfa_arn
+	case "Session_name":
+		return generalConfig[profile].Session_name
+    case "Dynamodb_table":
+        return generalConfig[profile].Dynamodb_table
+	case "Session_duration":
+		return generalConfig[profile].Session_duration
+	default:
+		fmt.Println("letme: error while retrieving field \""+ field + "\" could not be found in " + GetHomeDirectory()+"/.letme/letme-config")
+		os.Exit(1)
+    }
+	return generalConfig[profile]
+	// var exportedField interface{}
+	// for _, name := range []string{profile} {
+	// 	a := generalConfig[name]
+	// 	r := reflect.ValueOf(a)
+	// 	f := reflect.Indirect(r).FieldByName(field)
+	// 	exportedField = string(f.String())
 
-	}
-	return exportedField
+	// }
+	// return exportedField
 }
 
 // Checks if a cache file exists
@@ -292,10 +307,10 @@ func CredentialsProcessOutput(accessKeyID string, secretAccessKey string, sessio
 	return string(b)
 }
 
-// Create a file which stores the last time when credentials where accessed. Then query if the account exists,
+// Create a file which stores the last time when credentials where requested. Then query if the account exists,
 // if not, it will create its first entry. If it already exists, it will either return true (if credemtials are still within the session_duration)
 // and false if credentials have already been expired.
-func CheckAccountDatabaseFile(accountName string) {
+func CheckAccountDatabaseFile(accountName string, sessionDuration int64) {
 	databaseFileWriter, err := os.OpenFile(GetHomeDirectory()+"/.letme/.letme-db", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	CheckAndReturnError(err)
 	databaseFileReader, err := os.ReadFile(GetHomeDirectory() + "/.letme/.letme-db")
@@ -324,7 +339,7 @@ func CheckAccountDatabaseFile(accountName string) {
 		for i := range idents {
 			if idents[i].Account.Name == accountName {
 				idents[i].Account.LastRequest = time.Now().Unix()
-				idents[i].Account.Expiry = time.Now().Unix()
+				idents[i].Account.Expiry = time.Now().Add(time.Second * time.Duration(sessionDuration)).Unix()
 				b, err := json.MarshalIndent(idents, "", "  ")
 				CheckAndReturnError(err)
 
@@ -332,10 +347,10 @@ func CheckAccountDatabaseFile(accountName string) {
 					CheckAndReturnError(err)
 					defer databaseFileWriter.Close()
 				}
-				os.Exit(0)
+				return
 			} 
 		}
-		idents = append(idents, Account{Dataset{accountName, time.Now().Unix(), time.Now().Unix()}})
+		idents = append(idents, Account{Dataset{accountName, time.Now().Unix(), time.Now().Add(time.Second * time.Duration(sessionDuration)).Unix()}})
 		b, err := json.MarshalIndent(idents, "", "  ")
 		CheckAndReturnError(err)
 

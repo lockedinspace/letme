@@ -23,14 +23,6 @@ type GeneralParams struct {
 	Session_duration          int64 `toml:"session_duration,omitempty"`
 }
 
-// Struct which represents the cache file toml keys
-type CacheFields struct {
-	Id     int      `toml:"id"`
-	Name   string   `toml:"name"`
-	Role   []string `toml:"role"`
-	Region []string `toml:"region"`
-}
-
 // Verify config-file integrity
 func CheckConfigFile(path string) bool {
 	type config struct {
@@ -118,32 +110,23 @@ func ConfigFileResultString(profile string, field string) interface{} {
 	_, err := toml.DecodeFile(GetHomeDirectory()+"/.letme/letme-config", &generalConfig)
 	CheckAndReturnError(err)
 	switch field {
-    case "Aws_source_profile":
-        return generalConfig[profile].Aws_source_profile
-    case "Aws_source_profile_region":
-        return generalConfig[profile].Aws_source_profile_region
+	case "Aws_source_profile":
+		return generalConfig[profile].Aws_source_profile
+	case "Aws_source_profile_region":
+		return generalConfig[profile].Aws_source_profile_region
 	case "Mfa_arn":
-        return generalConfig[profile].Mfa_arn
+		return generalConfig[profile].Mfa_arn
 	case "Session_name":
 		return generalConfig[profile].Session_name
-    case "Dynamodb_table":
-        return generalConfig[profile].Dynamodb_table
+	case "Dynamodb_table":
+		return generalConfig[profile].Dynamodb_table
 	case "Session_duration":
 		return generalConfig[profile].Session_duration
 	default:
-		fmt.Println("letme: error while retrieving field \""+ field + "\" could not be found in " + GetHomeDirectory()+"/.letme/letme-config")
+		fmt.Println("letme: error while retrieving field '" + field + "' could not be found in " + GetHomeDirectory() + "/.letme/letme-config")
 		os.Exit(1)
-    }
+	}
 	return generalConfig[profile]
-	// var exportedField interface{}
-	// for _, name := range []string{profile} {
-	// 	a := generalConfig[name]
-	// 	r := reflect.ValueOf(a)
-	// 	f := reflect.Indirect(r).FieldByName(field)
-	// 	exportedField = string(f.String())
-
-	// }
-	// return exportedField
 }
 
 // Checks if a cache file exists
@@ -176,19 +159,6 @@ func AwsConfigFileRead() string {
 	readCacheFile, err := ioutil.ReadFile(GetHomeDirectory() + "/.aws/config")
 	CheckAndReturnError(err)
 	s := string(readCacheFile)
-	return s
-}
-
-// Maps data from the cache file into a struct
-func ParseCacheFile(account string) CacheFields {
-	type o = CacheFields
-	type general map[string]o
-	var generalConfig general
-	homeDir := GetHomeDirectory()
-	configFilePath := homeDir + "/.letme/.letme-cache"
-	_, err := toml.DecodeFile(configFilePath, &generalConfig)
-	CheckAndReturnError(err)
-	s := generalConfig[account]
 	return s
 }
 
@@ -283,18 +253,16 @@ func CheckAccountLocally(account string) string {
 	}
 	return ""
 }
-
+type CredentialsProcess struct {
+	Version         int
+	AccessKeyId     string
+	SecretAccessKey string
+	SessionToken    string
+	Expiration      time.Time
+}
 // Return aws credentials following the credentials_process standard
 // https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sourcing-external.html
-
 func CredentialsProcessOutput(accessKeyID string, secretAccessKey string, sessionToken string, expirationTime time.Time) string {
-	type CredentialsProcess struct {
-		Version         int
-		AccessKeyId     string
-		SecretAccessKey string
-		SessionToken    string
-		Expiration      time.Time
-	}
 	group := CredentialsProcess{
 		Version:         1,
 		AccessKeyId:     accessKeyID,
@@ -307,39 +275,45 @@ func CredentialsProcessOutput(accessKeyID string, secretAccessKey string, sessio
 	return string(b)
 }
 
+
+type Dataset struct {
+	Name          string `json:"name"`
+	LastRequest   int64  `json:"lastRequest"`
+	Expiry        int64  `json:"expiry"`
+	AuthMethod    string `json:"authMethod"`
+	V1Credentials string `json:"v1Credentials,omitempty"`
+}
+type Account struct {
+	Account Dataset `json:"account"`
+}
+
 // Create a file which stores the last time when credentials where requested. Then query if the account exists,
-// if not, it will create its first entry. If it already exists, it will either return true (if credemtials are still within the session_duration)
-// and false if credentials have already been expired.
-func CheckAccountDatabaseFile(accountName string, sessionDuration int64) {
+// if not, it will create its first entry.
+func DatabaseFile(accountName string, sessionDuration int64, v1Credentials string, authMethod string) {
 	databaseFileWriter, err := os.OpenFile(GetHomeDirectory()+"/.letme/.letme-db", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	CheckAndReturnError(err)
 	databaseFileReader, err := os.ReadFile(GetHomeDirectory() + "/.letme/.letme-db")
 	CheckAndReturnError(err)
 	fi, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-db")
 	CheckAndReturnError(err)
-	if !json.Valid([]byte(databaseFileReader)) && fi.Size() > 0 {
-		fmt.Printf("letme: " + GetHomeDirectory() + "/.letme/.letme-db" + " is not JSON valid.\n")
-		os.Exit(1)
-	}
-	type Dataset struct {
-		Name		string `json:"name"`
-		LastRequest int64 `json:"lastRequest"`
-	 	Expiry		int64 `json:"expiry"`
-	}
-	type Account struct {
-		Account     Dataset `json:"account"`
-	}
-	
 	var idents []Account
 	if fi.Size() > 0 {
+		//check if the json is valid, but ensure that the file has content
+		if !json.Valid([]byte(databaseFileReader)) && fi.Size() > 0 {
+			fmt.Printf("letme: " + GetHomeDirectory() + "/.letme/.letme-db" + " is not JSON valid. Remove the file and try again.\n")
+			os.Exit(1)
+		}
 		err = json.Unmarshal(databaseFileReader, &idents)
 		CheckAndReturnError(err)
 		err = os.Truncate(GetHomeDirectory()+"/.letme/.letme-db", 0)
 		CheckAndReturnError(err)
 		for i := range idents {
+			//when file is populated and client exist, just update fields
 			if idents[i].Account.Name == accountName {
 				idents[i].Account.LastRequest = time.Now().Unix()
 				idents[i].Account.Expiry = time.Now().Add(time.Second * time.Duration(sessionDuration)).Unix()
+				idents[i].Account.V1Credentials = v1Credentials
+				idents[i].Account.AuthMethod = authMethod
 				b, err := json.MarshalIndent(idents, "", "  ")
 				CheckAndReturnError(err)
 
@@ -348,9 +322,10 @@ func CheckAccountDatabaseFile(accountName string, sessionDuration int64) {
 					defer databaseFileWriter.Close()
 				}
 				return
-			} 
+			}
 		}
-		idents = append(idents, Account{Dataset{accountName, time.Now().Unix(), time.Now().Add(time.Second * time.Duration(sessionDuration)).Unix()}})
+		//when file is populated but client does not exist
+		idents = append(idents, Account{Dataset{accountName, time.Now().Unix(), time.Now().Add(time.Second * time.Duration(sessionDuration)).Unix(), authMethod, v1Credentials}})
 		b, err := json.MarshalIndent(idents, "", "  ")
 		CheckAndReturnError(err)
 
@@ -358,8 +333,9 @@ func CheckAccountDatabaseFile(accountName string, sessionDuration int64) {
 			CheckAndReturnError(err)
 			defer databaseFileWriter.Close()
 		}
+	//when file does not exist neither the client
 	} else if fi.Size() == 0 {
-		idents = append(idents, Account{Dataset{accountName, time.Now().Unix(), time.Now().Unix()}})
+		idents = append(idents, Account{Dataset{accountName, time.Now().Unix(), time.Now().Add(time.Second * time.Duration(sessionDuration)).Unix(), authMethod, v1Credentials}})
 		b, err := json.MarshalIndent(idents, "", "  ")
 		CheckAndReturnError(err)
 
@@ -367,5 +343,89 @@ func CheckAccountDatabaseFile(accountName string, sessionDuration int64) {
 			CheckAndReturnError(err)
 			defer databaseFileWriter.Close()
 		}
-	} 
+	}
+}
+
+// Compare the current local time with the expiry field in the .letme-db file. If current time has not yet surpassed
+// expiry time, return true. Else, return false indicating new credentials need to be requested.
+func CheckAccountAvailability(accountName string) bool {
+	if _, err := os.Stat(GetHomeDirectory()+"/.letme/.letme-db"); err == nil {
+		databaseFileReader, err := os.ReadFile(GetHomeDirectory() + "/.letme/.letme-db")
+		CheckAndReturnError(err)
+		fi, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-db")
+		CheckAndReturnError(err)
+		if !json.Valid([]byte(databaseFileReader)) && fi.Size() > 0 {
+			fmt.Printf("letme: " + GetHomeDirectory() + "/.letme/.letme-db" + " is not JSON valid. Remove the file and try again.\n")
+			os.Exit(1)
+		}
+		var idents []Account
+		json.Unmarshal(databaseFileReader, &idents) //should really check with _, err
+		for i := range idents {
+			if idents[i].Account.Name == accountName {
+				t1 := time.Now().Unix()
+				t2 := idents[i].Account.Expiry
+				t3 := t2 - t1
+				if t3 <= 0 {
+					return false
+				} else {
+					return true
+				}
+			}
+		}		
+	} else {
+		_, err := os.OpenFile(GetHomeDirectory()+"/.letme/.letme-db", os.O_CREATE, 0644)
+		CheckAndReturnError(err)
+	}
+	return false
+}
+
+// Check if the account to retrieve stored credentials exist, if true, return the credentials to stdout
+func ReturnAccountCredentials(accountName string) map[string]string {
+	databaseFileReader, err := os.ReadFile(GetHomeDirectory() + "/.letme/.letme-db")
+	CheckAndReturnError(err)
+	var idents []Account
+	var result string
+	m := make(map[string]string)
+	err = json.Unmarshal(databaseFileReader, &idents)
+	CheckAndReturnError(err)
+	for i := range idents {
+		if idents[i].Account.Name == accountName {
+			result = idents[i].Account.V1Credentials	
+			data := CredentialsProcess{}
+			json.Unmarshal([]byte(result), &data)
+			m["AccessKeyId"] =  data.AccessKeyId
+			m["SecretAccessKey"] =  data.SecretAccessKey
+			m["SessionToken"] =  data.SessionToken
+		}
+	}
+	return m
+}
+
+// Remove an account from the database file
+func RemoveAccountFromDatabaseFile(accountName string) {
+	jsonData, err := ioutil.ReadFile(GetHomeDirectory() + "/.letme/.letme-db")
+	CheckAndReturnError(err)
+	// Unmarshal JSON data into a slice of maps
+	var data []map[string]interface{}
+	if err := json.Unmarshal([]byte(jsonData), &data); err != nil {
+		CheckAndReturnError(err)
+	}
+
+	// Iterate over each object in the slice
+	for i, obj := range data {
+		// Check if the "name" field of the "account" object is "adaral"
+		if name, ok := obj["account"].(map[string]interface{})["name"].(string); ok && name == accountName {
+			// Remove the object from the slice
+			data = append(data[:i], data[i+1:]...)
+			break // Break after removing to avoid index out of range error
+		}
+	}
+
+	updatedJsonData, err := json.MarshalIndent(data, "", "  ")
+    CheckAndReturnError(err)
+
+    // Write the prettified JSON data to the file /test.json
+    if err := ioutil.WriteFile(GetHomeDirectory() + "/.letme/.letme-db", updatedJsonData, 0600); err != nil {
+        CheckAndReturnError(err)
+    }
 }

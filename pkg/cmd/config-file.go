@@ -11,7 +11,7 @@ import (
 
 var configFileCmd = &cobra.Command{
 	Use:   "config-file",
-	Short: "Creates the letme configuration file.",
+	Short: "Creates the letme configuration file",
 	Long: `Creates a configuration file with all the needed key-value pairs.
 The config file is created in your '$HOME/.letme/' directory, letme needs this file
 to perform aws calls, use the mfa device, etc.

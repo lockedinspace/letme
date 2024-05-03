@@ -2,41 +2,34 @@ TODO:
 - (letme-tests) fix credentials-process requesting credentials even if time specified in session_duration hasnt been completed
 - fix letme list not displaying more than 25 clients
 - letme list now must read from json database file
+- remove client from .letme-db file when letme remove client is issued
 - remove code referencing old cache mechanism  e.g. `type CacheFields struct`
 - deleted various external libraries which will make letme smaller in total size
+- remove old cache functions and methods (letme init)
 
 # letme [![Go Report Card](https://goreportcard.com/badge/github.com/lockedinspace/letme-go)](https://goreportcard.com/report/github.com/lockedinspace/letme-go) ![GitHub go.mod Go version of a Go module](https://img.shields.io/github/go-mod/go-version/lockedinspace/letme) [![GoDoc reference example](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/lockedinspace/letme) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
 
 A **reliable**, **secure** and **fast** way to switch between AWS accounts from the CLI.
 
 ## Requirements
-- Go (recommended 1.22 or later).
+- Go (recommended 1.19 or later).
 - AWS CLI (recommended v2).
+## What letme achieves
+letme was born in order to have a reliable and fast way to switch between AWS accounts from the cli, as some AWS system administrators found themselves using tools which involved in way too many variables to keep in mind in order to switch between accounts. 
 
-## Objectives
-`Letme` was born from the groundup with the following goals and design principles:
+It also mitigates the hassle that involves using the aws assume role api, switching between chained roles, etc. Moreover, it does not tinker with the end-user machine (_using the keychain, updating environment variables, executing other programs_), instead it follows a well-known statement _"Do not break userspace"_.
 
-- **Reduce the hassle** of interacting with AWS services on **multiple accounts**.
-- **Leverage** the interaction with AWS Assume Role API.
-- **Do not tinker** with end-user machine:
-    - ~~Using the keychain~~.
-    - ~~Updating environment variables~~.
-    - ~~Executing other programs~~.
-    - ~~etc.~~
-- **No more**: _"From my local computer works."_
-- **Be compatible** with all desktop OS.
+letme reads from a common database, so no more: _"From my local computer works."_
 
+It is also mantained and developed under the following statement:
 
-## What it is and what it's not
+- A simple tool which writes/updates AWS credentials under your AWS files.
 
-The following statement explains what this tool is:
+This achieves a lightweight, integrity-driven, fast and non-intrusive toolkit that only reads from a DynamoDB database, authenticates the user (_if MFA is enabled and AWS authorizes the assume role request_) and adds the successful credentials into (``$HOME/.aws/credentials`` and ``$HOME/.aws/config``).
 
-<p align="center"><b>
-A simple tool which writes/updates AWS credentials under your AWS files.</b>
-</p>
-
-
-This software is **NOT** intended for:
+Later on, you can append the  ``--profile example1`` to your AWS CLI operations and call resources from within example1's AWS account.
+## What it is not
+This software is not intended for:
 
 - Securing your AWS files, **letme just reads and writes to them**. 
 - **You are responsable** to prevent unauthorized access to those files.

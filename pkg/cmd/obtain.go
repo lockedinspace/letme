@@ -34,16 +34,19 @@ var obtainCmd = &cobra.Command{
 Credentials will last 3600 seconds by default and can be used with the argument '--profile $ACCOUNT_NAME'
 within the AWS cli binary.`,
 	Args: cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {		
+	Run: func(cmd *cobra.Command, args []string) {
 		// grab and save fields from the config file into variables
 		profile := utils.ConfigFileResultString("general", "Aws_source_profile").(string)
 		region := utils.ConfigFileResultString("general", "Aws_source_profile_region").(string)
 		table := utils.ConfigFileResultString("general", "Dynamodb_table").(string)
 		sessionName := utils.ConfigFileResultString("general", "Session_name").(string)
 		sessionDuration := utils.ConfigFileResultString("general", "Session_duration").(int64)
-		//utils.CheckAndReturnError(err)
+		if sessionDuration == 0 {
+			sessionDuration = 3600
+		}
 		// grab credentials process flags
 		credentialProcess, _ := cmd.Flags().GetBool("credential-process")
+		renew, _ := cmd.Flags().GetBool("renew")
 		localCredentialProcessFlagV1, _ := cmd.Flags().GetBool("v1")
 
 		// overwrite the session name variable if the user provides it
@@ -56,6 +59,12 @@ within the AWS cli binary.`,
 
 		// grab the mfa arn from the config, create a new aws session and try to get credentials
 		serialMfa := utils.ConfigFileResultString("general", "Mfa_arn").(string)
+		var authMethod string
+		if len(serialMfa) > 0 {
+			authMethod = "MFA"
+		} else {
+			authMethod = "null"
+		}
 		sesAws, err := session.NewSession(&aws.Config{
 			Region:      aws.String(region),
 			Credentials: credentials.NewSharedCredentials("", profile),
@@ -136,7 +145,6 @@ within the AWS cli binary.`,
 
 		// check if the account is the same as the provided by the user
 		if accountName == args[0] {
-			utils.CheckAccountDatabaseFile(args[0], sessionDuration)
 			svc := sts.New(sesAws)
 			var result *sts.AssumeRoleOutput
 			var tempCreds credentials.Value
@@ -255,20 +263,45 @@ within the AWS cli binary.`,
 						os.Exit(0)
 					}
 				} else {
-					if localCredentialProcessFlagV1 {
-					} else {
+					if renew {
 						fmt.Printf("Enter MFA one time pass code: ")
+						var tokenMfa string
+						fmt.Scanln(&tokenMfa)
+						result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+							RoleArn:         &singleRoleToAssumeArn,
+							RoleSessionName: &sessionName,
+							SerialNumber:    &serialMfa,
+							TokenCode:       &tokenMfa,
+							DurationSeconds: &sessionDuration,
+						})
+						utils.CheckAndReturnError(err)
+						utils.DatabaseFile(args[0], sessionDuration, utils.CredentialsProcessOutput(*result.Credentials.AccessKeyId, *result.Credentials.SecretAccessKey, *result.Credentials.SessionToken, *result.Credentials.Expiration), authMethod) //only when we really authenticate against aws
+					} else if !utils.CheckAccountAvailability(args[0]) && len(serialMfa) > 0 { // if CheckAccountAvailability is false, request new MFA token, else, do not ask
+						fmt.Printf("Enter MFA one time pass code: ")
+						var tokenMfa string
+						fmt.Scanln(&tokenMfa)
+						result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+							RoleArn:         &singleRoleToAssumeArn,
+							RoleSessionName: &sessionName,
+							SerialNumber:    &serialMfa,
+							TokenCode:       &tokenMfa,
+							DurationSeconds: &sessionDuration,
+						})
+						utils.CheckAndReturnError(err)
+						utils.DatabaseFile(args[0], sessionDuration, utils.CredentialsProcessOutput(*result.Credentials.AccessKeyId, *result.Credentials.SecretAccessKey, *result.Credentials.SessionToken, *result.Credentials.Expiration), authMethod) //only when we really authenticate against aws
+					} else if len(serialMfa) > 0 { //we do not ask mfa token when its on grace period, using credentials saved into keyring/encrypted into env vars
+						v1 := utils.ReturnAccountCredentials(args[0])
+						result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+							RoleArn:         &singleRoleToAssumeArn,
+							RoleSessionName: &sessionName,
+							DurationSeconds: &sessionDuration,
+						})
+						v1 = utils.ReturnAccountCredentials(args[0])
+						*result.Credentials.AccessKeyId = v1["AccessKeyId"]
+						*result.Credentials.SecretAccessKey = v1["SecretAccessKey"]
+						*result.Credentials.SessionToken = v1["SessionToken"] 
+						fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
 					}
-					var tokenMfa string
-					fmt.Scanln(&tokenMfa)
-					result, err = svc.AssumeRole(&sts.AssumeRoleInput{
-						RoleArn:         &singleRoleToAssumeArn,
-						RoleSessionName: &sessionName,
-						SerialNumber:    &serialMfa,
-						TokenCode:       &tokenMfa,
-						DurationSeconds: &sessionDuration,
-					})
-					utils.CheckAndReturnError(err)
 					if localCredentialProcessFlagV1 {
 						fmt.Printf(utils.CredentialsProcessOutput(*result.Credentials.AccessKeyId, *result.Credentials.SecretAccessKey, *result.Credentials.SessionToken, *result.Credentials.Expiration))
 						os.Exit(0)
@@ -281,6 +314,7 @@ within the AWS cli binary.`,
 					DurationSeconds: &sessionDuration,
 				})
 				utils.CheckAndReturnError(err)
+				utils.DatabaseFile(args[0], sessionDuration, utils.CredentialsProcessOutput(*result.Credentials.AccessKeyId, *result.Credentials.SecretAccessKey, *result.Credentials.SessionToken, *result.Credentials.Expiration), authMethod)
 				if localCredentialProcessFlagV1 {
 					fmt.Printf(utils.CredentialsProcessOutput(*result.Credentials.AccessKeyId, *result.Credentials.SecretAccessKey, *result.Credentials.SessionToken, *result.Credentials.Expiration))
 					os.Exit(0)

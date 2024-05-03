@@ -27,39 +27,30 @@ and '$HOME/.aws/config' files.
 		// open both files and check if there's any error opening them, if not, delete entries based on what's existing
 		_, errCred := os.OpenFile(utils.GetHomeDirectory()+"/.aws/credentials", os.O_RDWR|os.O_APPEND, 0600)
 		_, errConf := os.OpenFile(utils.GetHomeDirectory()+"/.aws/config", os.O_RDWR|os.O_APPEND, 0600)
-		if !(errors.Is(errCred, os.ErrNotExist)) && !(errors.Is(errConf, os.ErrNotExist)) {
-			accountInFile := utils.CheckAccountLocally(args[0])
-			switch {
-			case accountInFile["credentials"]:
-				credentialSection, err := credentials.GetSection(args[0])
-				utils.CheckAndReturnError(err)
-				if credentialSection.Comment != "; letme managed" {
-					err := fmt.Errorf("Account " + args[0] + " is not managed by letme, so it won't be deleted")
-					utils.CheckAndReturnError(err)
-				}
-				credentials.DeleteSection(args[0])
-				if err := credentials.SaveTo(utils.GetHomeDirectory() + "/.aws/credentials"); err != nil {
-					utils.CheckAndReturnError(err)
-				}
-				fmt.Println("letme: removed profile '" + args[0] + "' entry from credentials file.")
-				fallthrough
-			case accountInFile["config"]:
-				configSection, err := config.GetSection("profile " + args[0])
-				utils.CheckAndReturnError(err)
-				if configSection.Comment != "; letme managed" {
-					err := fmt.Errorf("Account " + args[0] + " is not managed by letme, so it won't be deleted")
-					utils.CheckAndReturnError(err)
-				}
-				config.DeleteSection("profile " + args[0])
-				if err := config.SaveTo(utils.GetHomeDirectory() + "/.aws/config"); err != nil {
-					utils.CheckAndReturnError(err)
-				}
-				fmt.Println("letme: removed profile '" + args[0] + "' entry from config file.")
-			default:
-				fmt.Println("letme: unable to remove profile '" + args[0] + "', not found on your local aws files")
-				os.Exit(1)
-			}
+		if !(errors.Is(errCred, os.ErrNotExist)) && !(errors.Is(errConf, os.ErrNotExist)) && utils.CheckAccountLocally(args[0]) == "true,true" {
+			credFile2, err := os.OpenFile(utils.GetHomeDirectory()+"/.aws/credentials", os.O_RDWR|os.O_TRUNC, 0600)
+			utils.CheckAndReturnError(err)
+			confFile2, err := os.OpenFile(utils.GetHomeDirectory()+"/.aws/config", os.O_RDWR|os.O_TRUNC, 0600)
+			utils.CheckAndReturnError(err)
+			fmt.Fprintf(credFile2, "%v", utils.AwsReplaceBlock(s, args[0]))
+			fmt.Fprintf(confFile2, "%v", utils.AwsReplaceBlock(f, args[0]))
 			utils.RemoveAccountFromDatabaseFile(args[0])
+			fmt.Println("Removed profile '" + args[0] + "' entries from credentials and config files.")
+		} else if utils.CheckAccountLocally(args[0]) == "false,true" {
+			confFile2, err := os.OpenFile(utils.GetHomeDirectory()+"/.aws/config", os.O_RDWR|os.O_TRUNC, 0600)
+			utils.CheckAndReturnError(err)
+			fmt.Fprintf(confFile2, "%v", utils.AwsReplaceBlock(f, args[0]))
+			utils.RemoveAccountFromDatabaseFile(args[0])
+			fmt.Println("Removed profile '" + args[0] + "' entry from config file.")
+		} else if utils.CheckAccountLocally(args[0]) == "true,false" {
+			credFile2, err := os.OpenFile(utils.GetHomeDirectory()+"/.aws/credentials", os.O_RDWR|os.O_TRUNC, 0600)
+			utils.CheckAndReturnError(err)
+			fmt.Fprintf(credFile2, "%v", utils.AwsReplaceBlock(s, args[0]))
+			utils.RemoveAccountFromDatabaseFile(args[0])
+			fmt.Println("Removed profile '" + args[0] + "' entry from credentials file.")
+		} else {
+			fmt.Println("letme: unable to remove profile '" + args[0] + "', not found on your local aws files")
+			os.Exit(1)
 		}
 	},
 }

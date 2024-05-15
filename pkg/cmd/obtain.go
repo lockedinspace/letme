@@ -64,10 +64,14 @@ within the AWS cli binary.`,
 		// grab the mfa arn from the config, create a new aws session and try to get credentials
 		serialMfa := utils.ConfigFileResultString("general", "Mfa_arn").(string)
 		var authMethod string
-		if len(serialMfa) > 0 {
-			authMethod = "MFA"
+		if len(serialMfa) > 0 && !localCredentialProcessFlagV1 {
+			authMethod = "mfa"
+		} else if len(serialMfa) > 0 && localCredentialProcessFlagV1 {
+			authMethod = "mfa-credential-process-v1"
+		} else if localCredentialProcessFlagV1 {
+			authMethod = "credential-process-v1"
 		} else {
-			authMethod = "null"
+			authMethod = "assume-role"
 		}
 		sesAws, err := session.NewSession(&aws.Config{
 			Region:      aws.String(region),
@@ -304,24 +308,48 @@ within the AWS cli binary.`,
 						*result.Credentials.AccessKeyId = v1["AccessKeyId"]
 						*result.Credentials.SecretAccessKey = v1["SecretAccessKey"]
 						*result.Credentials.SessionToken = v1["SessionToken"] 
-						fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
-					}
+						if !localCredentialProcessFlagV1{
+							fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
+						}
+					} 
 					if localCredentialProcessFlagV1 {
 						fmt.Printf(utils.CredentialsProcessOutput(*result.Credentials.AccessKeyId, *result.Credentials.SecretAccessKey, *result.Credentials.SessionToken, *result.Credentials.Expiration))
 						os.Exit(0)
 					}
 				}
 			} else {
-				result, err = svc.AssumeRole(&sts.AssumeRoleInput{
-					RoleArn:         &singleRoleToAssumeArn,
-					RoleSessionName: &sessionName,
-					DurationSeconds: &sessionDuration,
-				})
-				utils.CheckAndReturnError(err)
-				utils.DatabaseFile(args[0], sessionDuration, utils.CredentialsProcessOutput(*result.Credentials.AccessKeyId, *result.Credentials.SecretAccessKey, *result.Credentials.SessionToken, *result.Credentials.Expiration), authMethod)
-				if localCredentialProcessFlagV1 {
+				if renew {
+					result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+						RoleArn:         &singleRoleToAssumeArn,
+						RoleSessionName: &sessionName,
+						DurationSeconds: &sessionDuration,
+					})
+					utils.CheckAndReturnError(err)
+					utils.DatabaseFile(args[0], sessionDuration, utils.CredentialsProcessOutput(*result.Credentials.AccessKeyId, *result.Credentials.SecretAccessKey, *result.Credentials.SessionToken, *result.Credentials.Expiration), authMethod)
+				} else if !utils.CheckAccountAvailability(args[0]) {
+					result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+						RoleArn:         &singleRoleToAssumeArn,
+						RoleSessionName: &sessionName,
+						DurationSeconds: &sessionDuration,
+					})
+					utils.CheckAndReturnError(err)
+					utils.DatabaseFile(args[0], sessionDuration, utils.CredentialsProcessOutput(*result.Credentials.AccessKeyId, *result.Credentials.SecretAccessKey, *result.Credentials.SessionToken, *result.Credentials.Expiration), authMethod)
+				} else if localCredentialProcessFlagV1 {
 					fmt.Printf(utils.CredentialsProcessOutput(*result.Credentials.AccessKeyId, *result.Credentials.SecretAccessKey, *result.Credentials.SessionToken, *result.Credentials.Expiration))
 					os.Exit(0)
+			    } 	else {
+					v1 := utils.ReturnAccountCredentials(args[0])
+					result, err = svc.AssumeRole(&sts.AssumeRoleInput{
+						RoleArn:         &singleRoleToAssumeArn,
+						RoleSessionName: &sessionName,
+						DurationSeconds: &sessionDuration,
+					})
+					v1 = utils.ReturnAccountCredentials(args[0])
+					*result.Credentials.AccessKeyId = v1["AccessKeyId"]
+					*result.Credentials.SecretAccessKey = v1["SecretAccessKey"]
+					*result.Credentials.SessionToken = v1["SessionToken"] 
+					fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
+
 				}
 			}
 

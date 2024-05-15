@@ -1,3 +1,5 @@
+Known issues:
+- --credentials-process with mfa enabled fails if mfa code is not provided through argument --inline-mfa
 TODO:
 - (letme-tests) fix credentials-process requesting credentials even if time specified in session_duration hasnt been completed
 - fix letme list not displaying more than 25 clients

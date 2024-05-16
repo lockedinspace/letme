@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-// Struct which represents the config-file toml keys
+// Struct which represents the config-file keys
 type GeneralParams struct {
 	Aws_source_profile        string
 	Aws_source_profile_region string `toml:"aws_source_profile_region,omitempty"`
@@ -23,7 +23,7 @@ type GeneralParams struct {
 	Session_duration          int64 `toml:"session_duration,omitempty"`
 }
 
-// Verify config-file integrity
+// Verify if the config-file respects the struct GeneralParams
 func CheckConfigFile(path string) bool {
 	type config struct {
 		General struct {
@@ -47,7 +47,7 @@ func CheckConfigFile(path string) bool {
 	}
 }
 
-// Check if a command exists on the host machine
+// Check if a command exists
 func CommandExists(command string) {
 	_, err := exec.LookPath(command)
 	CheckAndReturnError(err)
@@ -80,24 +80,7 @@ func TemplateConfigFile() string {
 	return buf.String()
 }
 
-// Marshalls data into a toml file (.letme-cache)
-func TemplateCacheFile(accountName string, accountID int, accountRole []string, accountRegion []string) string {
-	var (
-		buf = new(bytes.Buffer)
-	)
-	err := toml.NewEncoder(buf).Encode(map[string]interface{}{
-		accountName: map[string]interface{}{
-			"id":     accountID,
-			"name":   accountName,
-			"role":   accountRole,
-			"region": accountRegion,
-		},
-	})
-	CheckAndReturnError(err)
-	return buf.String()
-}
-
-// Gets user's $HOME directory
+// Gets the user $HOME directory
 func GetHomeDirectory() string {
 	homeDir, err := os.UserHomeDir()
 	CheckAndReturnError(err)
@@ -129,21 +112,13 @@ func ConfigFileResultString(profile string, field string) interface{} {
 	return generalConfig[profile]
 }
 
-// Checks if a cache file exists
+// Checks if the .letme-cache file exists, this file is not supported starting from versions 0.2.0 and above
 func CacheFileExists() bool {
 	if _, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-cache"); err == nil {
 		return true
 	} else {
 		return false
 	}
-}
-
-// Reads the cache file
-func CacheFileRead() string {
-	readCacheFile, err := ioutil.ReadFile(GetHomeDirectory() + "/.letme/.letme-cache")
-	CheckAndReturnError(err)
-	s := string(readCacheFile)
-	return s
 }
 
 // Reads the aws credentials file
@@ -162,7 +137,7 @@ func AwsConfigFileRead() string {
 	return s
 }
 
-// Marshalls data into a string
+// Marshalls data into a string used for the aws credentials file
 func AwsCredentialsFile(accountName string, accessKeyID string, secretAccessKey string, sessionToken string) string {
 	now := time.Now()
 	a := now.Format("Jan 2, 2006 15:04:05")
@@ -177,7 +152,7 @@ aws_session_token = %v
 `, accountName, a, accountName, accessKeyID, secretAccessKey, sessionToken, accountName)
 }
 
-// Marshalls data into a string
+// Marshalls data into a string used for the aws config file but with the v1 output protocol
 func AwsConfigFileCredentialsProcessV1(accountName string, region string) string {
 	return fmt.Sprintf(
 		`#s-%v
@@ -189,7 +164,7 @@ output = json
 `, accountName, accountName, accountName, region, accountName)
 }
 
-// Marshalls data into a string
+// Marshalls data into a string used for the aws credentials file
 func AwsConfigFile(accountName string, region string) string {
 	return fmt.Sprintf(
 		`#s-%v
@@ -253,6 +228,8 @@ func CheckAccountLocally(account string) string {
 	}
 	return ""
 }
+
+// Struct which states the credential process output for the v1 protocol
 type CredentialsProcess struct {
 	Version         int
 	AccessKeyId     string
@@ -260,6 +237,7 @@ type CredentialsProcess struct {
 	SessionToken    string
 	Expiration      time.Time
 }
+
 // Return aws credentials following the credentials_process standard
 // https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sourcing-external.html
 func CredentialsProcessOutput(accessKeyID string, secretAccessKey string, sessionToken string, expirationTime time.Time) string {
@@ -274,7 +252,6 @@ func CredentialsProcessOutput(accessKeyID string, secretAccessKey string, sessio
 	CheckAndReturnError(err)
 	return string(b)
 }
-
 
 type Dataset struct {
 	Name          string `json:"name"`
@@ -333,7 +310,7 @@ func DatabaseFile(accountName string, sessionDuration int64, v1Credentials strin
 			CheckAndReturnError(err)
 			defer databaseFileWriter.Close()
 		}
-	//when file does not exist neither the client
+		//when file does not exist neither the client
 	} else if fi.Size() == 0 {
 		idents = append(idents, Account{Dataset{accountName, time.Now().Unix(), time.Now().Add(time.Second * time.Duration(sessionDuration)).Unix(), authMethod, v1Credentials}})
 		b, err := json.MarshalIndent(idents, "", "  ")
@@ -349,7 +326,7 @@ func DatabaseFile(accountName string, sessionDuration int64, v1Credentials strin
 // Compare the current local time with the expiry field in the .letme-db file. If current time has not yet surpassed
 // expiry time, return true. Else, return false indicating new credentials need to be requested.
 func CheckAccountAvailability(accountName string) bool {
-	if _, err := os.Stat(GetHomeDirectory()+"/.letme/.letme-db"); err == nil {
+	if _, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-db"); err == nil {
 		databaseFileReader, err := os.ReadFile(GetHomeDirectory() + "/.letme/.letme-db")
 		CheckAndReturnError(err)
 		fi, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-db")
@@ -371,7 +348,7 @@ func CheckAccountAvailability(accountName string) bool {
 					return true
 				}
 			}
-		}		
+		}
 	} else {
 		_, err := os.OpenFile(GetHomeDirectory()+"/.letme/.letme-db", os.O_CREATE, 0644)
 		CheckAndReturnError(err)
@@ -390,12 +367,12 @@ func ReturnAccountCredentials(accountName string) map[string]string {
 	CheckAndReturnError(err)
 	for i := range idents {
 		if idents[i].Account.Name == accountName {
-			result = idents[i].Account.V1Credentials	
+			result = idents[i].Account.V1Credentials
 			data := CredentialsProcess{}
 			json.Unmarshal([]byte(result), &data)
-			m["AccessKeyId"] =  data.AccessKeyId
-			m["SecretAccessKey"] =  data.SecretAccessKey
-			m["SessionToken"] =  data.SessionToken
+			m["AccessKeyId"] = data.AccessKeyId
+			m["SecretAccessKey"] = data.SecretAccessKey
+			m["SessionToken"] = data.SessionToken
 		}
 	}
 	return m
@@ -422,10 +399,10 @@ func RemoveAccountFromDatabaseFile(accountName string) {
 	}
 
 	updatedJsonData, err := json.MarshalIndent(data, "", "  ")
-    CheckAndReturnError(err)
+	CheckAndReturnError(err)
 
-    // Write the prettified JSON data to the file /test.json
-    if err := ioutil.WriteFile(GetHomeDirectory() + "/.letme/.letme-db", updatedJsonData, 0600); err != nil {
-        CheckAndReturnError(err)
-    }
+	// Write the prettified JSON data to the file /test.json
+	if err := ioutil.WriteFile(GetHomeDirectory()+"/.letme/.letme-db", updatedJsonData, 0600); err != nil {
+		CheckAndReturnError(err)
+	}
 }

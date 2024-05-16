@@ -307,11 +307,11 @@ within the AWS cli binary.`,
 						v1 = utils.ReturnAccountCredentials(args[0])
 						*result.Credentials.AccessKeyId = v1["AccessKeyId"]
 						*result.Credentials.SecretAccessKey = v1["SecretAccessKey"]
-						*result.Credentials.SessionToken = v1["SessionToken"] 
-						if !localCredentialProcessFlagV1{
+						*result.Credentials.SessionToken = v1["SessionToken"]
+						if !localCredentialProcessFlagV1 {
 							fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
 						}
-					} 
+					}
 					if localCredentialProcessFlagV1 {
 						fmt.Printf(utils.CredentialsProcessOutput(*result.Credentials.AccessKeyId, *result.Credentials.SecretAccessKey, *result.Credentials.SessionToken, *result.Credentials.Expiration))
 						os.Exit(0)
@@ -337,7 +337,7 @@ within the AWS cli binary.`,
 				} else if localCredentialProcessFlagV1 {
 					fmt.Printf(utils.CredentialsProcessOutput(*result.Credentials.AccessKeyId, *result.Credentials.SecretAccessKey, *result.Credentials.SessionToken, *result.Credentials.Expiration))
 					os.Exit(0)
-			    } 	else {
+				} else {
 					v1 := utils.ReturnAccountCredentials(args[0])
 					result, err = svc.AssumeRole(&sts.AssumeRoleInput{
 						RoleArn:         &singleRoleToAssumeArn,
@@ -347,7 +347,7 @@ within the AWS cli binary.`,
 					v1 = utils.ReturnAccountCredentials(args[0])
 					*result.Credentials.AccessKeyId = v1["AccessKeyId"]
 					*result.Credentials.SecretAccessKey = v1["SecretAccessKey"]
-					*result.Credentials.SessionToken = v1["SessionToken"] 
+					*result.Credentials.SessionToken = v1["SessionToken"]
 					fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
 
 				}

@@ -31,7 +31,7 @@ var obtainCmd = &cobra.Command{
 	},
 	Short: "Obtain account credentials",
 	Long: `Obtains credentials once the user authenticates itself.
-Credentials will last 3600 seconds by default and can be used with the argument '--profile $ACCOUNT_NAME'
+Credentials will last 3600 seconds by default and can be used with the argument '--profile $ACCOUNT_NAME' 
 within the AWS cli binary.`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

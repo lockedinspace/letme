@@ -35,12 +35,15 @@ Credentials will last 3600 seconds by default and can be used with the argument 
 within the AWS cli binary.`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		// get the current context
+		context := utils.GetCurrentContext()
+		
 		// grab and save fields from the config file into variables
-		profile := utils.ConfigFileResultString("general", "Aws_source_profile").(string)
-		region := utils.ConfigFileResultString("general", "Aws_source_profile_region").(string)
-		table := utils.ConfigFileResultString("general", "Dynamodb_table").(string)
-		sessionName := utils.ConfigFileResultString("general", "Session_name").(string)
-		sessionDuration := utils.ConfigFileResultString("general", "Session_duration").(int64)
+		profile := utils.ConfigFileResultString(context, "Aws_source_profile").(string)
+		region := utils.ConfigFileResultString(context, "Aws_source_profile_region").(string)
+		table := utils.ConfigFileResultString(context, "Dynamodb_table").(string)
+		sessionName := utils.ConfigFileResultString(context, "Session_name").(string)
+		sessionDuration := utils.ConfigFileResultString(context, "Session_duration").(int64)
 		if sessionDuration == 0 {
 			sessionDuration = 3600
 		}
@@ -58,7 +61,7 @@ within the AWS cli binary.`,
 		}
 
 		// grab the mfa arn from the config, create a new aws session and try to get credentials
-		serialMfa := utils.ConfigFileResultString("general", "Mfa_arn").(string)
+		serialMfa := utils.ConfigFileResultString(context, "Mfa_arn").(string)
 		var authMethod string
 		if len(serialMfa) > 0 && !localCredentialProcessFlagV1 {
 			authMethod = "mfa"

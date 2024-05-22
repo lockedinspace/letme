@@ -25,42 +25,64 @@ type GeneralParams struct {
 	Session_duration          int64 `toml:"session_duration,omitempty"`
 }
 
+// Expected keys in letme-config file
+var ExpectedKeys = map[string]bool{
+	"aws_source_profile":       true,
+	"aws_source_profile_region": true,
+	"dynamodb_table":           true,
+	"mfa_arn":                  true,
+	"session_name":             true,
+	"session_duration":         true,
+}
+
+// Mandatory keys in letme-config file
+var MandatoryKeys = []string{
+	"aws_source_profile",
+	"aws_source_profile_region",
+	"dynamodb_table",
+}
+
 // Verify if the config-file respects the struct GeneralParams
 func CheckConfigFile(path string) bool {
-	type config struct {
-		General struct {
-			Aws_source_profile        string
-			Aws_source_profile_region string `toml:"aws_source_profile_region,omitempty"`
-			Dynamodb_table            string
-			Mfa_arn                   string `toml:"mfa_arn,omitempty"`
-			Session_name              string
-			Session_duration          int64 `toml:"session_duration,omitempty"`
-		}
+
+	type Config map[string]map[string]interface{}
+	var config Config
+
+	// Decode the TOML file into the config map
+	md, err := toml.DecodeFile(path, &config)
+	if err != nil {
+		fmt.Println("letme: error decoding TOML file:", err)
+		return false
 	}
-	var conf config
-	md, err := toml.DecodeFile(path, &conf)
-	CheckAndReturnError(err)
 
-	sections := config.Sections()
-
-	for _, section := range sections {
-		if section.Name() == "DEFAULT" {
-			continue
-		}
+	// Iterate over each table and validate its keys
+	for tableName, table := range config {
+		// Check for mandatory keys
 		for _, key := range MandatoryKeys {
-			if ok := section.HasKey(key); !ok {
-				fmt.Printf("letme: missing mandatory key '%s' in table '%s'. Config file should have the following structure:\n", key, section.Name())
+			if _, ok := table[key]; !ok {
+				fmt.Printf("letme: missing mandatory key '%s' in table '%s'\n", key, tableName)
 				return false
 			}
 		}
-
-		for _, key := range section.KeyStrings() {
+		for key := range table {
 			if !ExpectedKeys[key] {
-				fmt.Printf("Error: Invalid key '%s' in table '%s'. Config file should have the following structure:\n", key, section.Name())
+				fmt.Printf("Error: Invalid key '%s' in table '%s'\n", key, tableName)
 				return false
 			}
 		}
 	}
+
+	// Check for any undecoded keys
+	undecoded := md.Undecoded()
+	if len(undecoded) > 0 {
+		fmt.Println("Undecoded keys found:")
+		for _, key := range undecoded {
+			fmt.Println(key)
+		}
+		return false
+	}
+	return true
+}
 
 // Check if a command exists
 func CommandExists(command string) {
@@ -82,13 +104,13 @@ func TemplateConfigFile() string {
 		buf = new(bytes.Buffer)
 	)
 	err := toml.NewEncoder(buf).Encode(map[string]interface{}{
-		"general": map[string]interface{}{
+		"contextName": map[string]interface{}{
 			"aws_source_profile":        "default",
 			"aws_source_profile_region": "eu-west-3",
 			"dynamodb_table":            "customers",
-			"mfa_arn":                   "arn:aws:iam::3301048219:mfa/user",
+			"mfa_arn":                   "arn:aws:iam::4002019901:mfa/user",
 			"session_name":              "user_letme",
-			"session_duration":          "3600",
+			"session_duration":          3600,
 		},
 	})
 	CheckAndReturnError(err)
@@ -370,7 +392,7 @@ func CheckAccountAvailability(accountName string) bool {
 			}
 		}
 	} else {
-		_, err := os.OpenFile(GetHomeDirectory()+"/.letme/.letme-db", os.O_CREATE, 0644)
+		_, err := os.OpenFile(GetHomeDirectory()+"/.letme/.letme-db", os.O_CREATE, 0600)
 		CheckAndReturnError(err)
 	}
 	return false
@@ -425,4 +447,70 @@ func RemoveAccountFromDatabaseFile(accountName string) {
 	if err := ioutil.WriteFile(GetHomeDirectory()+"/.letme/.letme-db", updatedJsonData, 0600); err != nil {
 		CheckAndReturnError(err)
 	}
+}
+
+// UserSettings represents the structure of the .letme-usersettings file.
+type UserSettings struct {
+	ActiveContext string `json:"activeContext"`
+}
+
+// Create the .letme-usersettings file which holds the current context and more
+func UpdateContext(context string) {
+	filePath := GetHomeDirectory() + "/.letme/.letme-usersettings"
+
+	var settings UserSettings
+
+	// Check if the file exists
+	if _, err := os.Stat(filePath); err == nil {
+		// File exists, read the current content
+		content, err := ioutil.ReadFile(filePath)
+		CheckAndReturnError(err)
+
+		// Unmarshal the current content into the settings struct
+		err = json.Unmarshal(content, &settings)
+		CheckAndReturnError(err)
+
+	} else if !os.IsNotExist(err) {
+		// An unexpected error occurred
+		CheckAndReturnError(err)
+	}
+
+	// Update the activeContext field
+	settings.ActiveContext = context
+
+	// Marshal the settings struct to JSON
+	newContent, err := json.Marshal(settings)
+	CheckAndReturnError(err)
+
+
+	// Write the updated JSON back to the file
+	err = ioutil.WriteFile(filePath, newContent, 0644)
+	CheckAndReturnError(err)
+
+	err = os.Chmod(filePath, 0600)
+	CheckAndReturnError(err)
+}
+
+// Get the current context used by letme
+
+func GetCurrentContext() string {
+	filePath := GetHomeDirectory() + "/.letme/.letme-usersettings"
+
+	// Check if the file exists
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		CheckAndReturnError(err)
+	}
+
+	// Read the content of the file
+	content, err := ioutil.ReadFile(filePath)
+	CheckAndReturnError(err)
+
+	// Unmarshal the content into the UserSettings struct
+	var settings UserSettings
+	if err := json.Unmarshal(content, &settings); err != nil {
+		CheckAndReturnError(err)
+	}
+
+	// Return the value of the activeContext field
+	return settings.ActiveContext
 }

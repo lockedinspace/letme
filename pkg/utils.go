@@ -496,11 +496,10 @@ func UpdateContext(context string) {
 func GetCurrentContext() string {
 	filePath := GetHomeDirectory() + "/.letme/.letme-usersettings"
 
-	// Check if the file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		CheckAndReturnError(err)
-	}
-
+	// Check if the file exists 
+	if _, err := os.Stat(filePath); os.IsNotExist(err)  {
+		return "general"
+	} 
 	// Read the content of the file
 	content, err := ioutil.ReadFile(filePath)
 	CheckAndReturnError(err)

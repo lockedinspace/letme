@@ -34,14 +34,16 @@ var listCmd = &cobra.Command{
 	Short: "List accounts",
 	Long:  `Lists all the AWS accounts and their main region.`,
 	Run: func(cmd *cobra.Command, args []string) {
-
+		// get the current context
+		context := utils.GetCurrentContext()
+		
 		// get local flag
 		localFlag, _ := cmd.Flags().GetBool("local")
 
 		// grab and save fields from the config file into variables
-		profile := utils.ConfigFileResultString("general", "Aws_source_profile").(string)
-		region := utils.ConfigFileResultString("general", "Aws_source_profile_region").(string)
-		table := utils.ConfigFileResultString("general", "Dynamodb_table").(string)
+		profile := utils.ConfigFileResultString(context, "Aws_source_profile").(string)
+		region := utils.ConfigFileResultString(context, "Aws_source_profile_region").(string)
+		table := utils.ConfigFileResultString(context, "Dynamodb_table").(string)
 
 		// create a new aws session and try to get credentials
 		sesAws, err := session.NewSession(&aws.Config{

@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var currentVersion = "v0.2.0-rc1"
+var currentVersion = "v0.2.0-rc3"
 var versionPrettyName = "Refurbished beagle"
 var rootCmd = &cobra.Command{
 	Use:   "letme",

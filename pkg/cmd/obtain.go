@@ -53,11 +53,11 @@ within the AWS cli binary.`,
 		localCredentialProcessFlagV1, _ := cmd.Flags().GetBool("v1")
 
 		// overwrite the session name variable if the user provides it
-		if len(letmeContext.AwsSessionName) == 0 && !localCredentialProcessFlagV1 {
-			fmt.Println("Using default session name: '" + args[0] + "-letme-session' with context: '" + currentContext + "'")
-			letmeContext.AwsSessionName = args[0] + "-letme-session"
+		if len(sessionName) == 0 && !localCredentialProcessFlagV1 {
+			fmt.Println("Using default session name: '" + args[0] + "-letme-session' with context: '" + context + "'")
+			sessionName = args[0] + "-letme-session"
 		} else if !localCredentialProcessFlagV1 {
-			fmt.Println("Assuming role with the following session name: " + sessionName)
+			fmt.Println("Assuming role with the following session name: '" + sessionName + "' and context: '" + context + "'")
 		}
 
 		// grab the mfa arn from the config, create a new aws session and try to get credentials

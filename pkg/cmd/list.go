@@ -53,6 +53,7 @@ var listCmd = &cobra.Command{
 		utils.CheckAndReturnError(err)
 		_, err = sesAws.Config.Credentials.Get()
 		utils.CheckAndReturnError(err)
+		fmt.Println("Listing accounts using '" + context + "' context")
 
 		// check if the .letme-cache file exists, if not, queries must be satisfied through internet
 		if utils.CacheFileExists() {
@@ -84,7 +85,6 @@ var listCmd = &cobra.Command{
 					sorted = append(sorted, value.Name+"\t"+value.Region[0])
 				}
 			}
-
 			// sort the slice and using a tabwriter print a nicely formed output
 			sort.Strings(sorted)
 			w := tabwriter.NewWriter(os.Stdout, 25, 200, 1, ' ', 0)

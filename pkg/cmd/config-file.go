@@ -3,10 +3,11 @@ package letme
 import (
 	"bufio"
 	"fmt"
-	"github.com/lockedinspace/letme/pkg"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
+
+	utils "github.com/hectorruiz-it/letme-alpha/pkg"
+	"github.com/spf13/cobra"
 )
 
 var configFileCmd = &cobra.Command{

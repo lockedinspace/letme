@@ -11,12 +11,12 @@ import (
 var contextCmd = &cobra.Command{
 	Use: "config",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		if _, err := os.Stat(utils.GetHomeDirectory() + "/.letme/letme-config"); err == nil {
+		if _, err := os.Stat(utils.GetHomeDirectory() + "/.letme-alpha/letme-config"); err == nil {
 		} else {
 			fmt.Println("letme: Could not locate any config file. Please run 'letme config-file' to create one.")
 			os.Exit(1)
 		}
-		result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
+		result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme-alpha/letme-config")
 		if result {
 		} else {
 			fmt.Println("letme: run 'letme config-file --verify' to obtain a template for your config file.")

@@ -630,7 +630,7 @@ func AssumeRole(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa strin
 			RoleArn:         &account.Role[0],
 			RoleSessionName: &letmeContext.AwsSessionName,
 			SerialNumber:    &letmeContext.AwsMfaArn,
-			// TokenCode:       &tokenMfa,
+			TokenCode:       &tokenMfa,
 			DurationSeconds: &letmeContext.AwsSessionDuration,
 		}
 	default:

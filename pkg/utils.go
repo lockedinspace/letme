@@ -1,17 +1,16 @@
 package utils
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"text/tabwriter"
 	"time"
 
-	"github.com/BurntSushi/toml"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -22,16 +21,6 @@ import (
 
 	"gopkg.in/ini.v1"
 )
-
-// Struct which represents the config-file keys
-type GeneralParams struct {
-	Aws_source_profile        string
-	Aws_source_profile_region string `toml:"aws_source_profile_region,omitempty"`
-	Dynamodb_table            string
-	Mfa_arn                   string `toml:"mfa_arn,omitempty"`
-	Session_name              string
-	Session_duration          int64 `toml:"session_duration,omitempty"`
-}
 
 // Expected keys in letme-config file
 var ExpectedKeys = map[string]bool{
@@ -83,45 +72,39 @@ type ProfileCredential struct {
 	SessionToken string `ini:"aws_session_token"`
 }
 
-// Verify if the config-file respects the struct GeneralParams
+// Verify if the config-file respects the struct LetmeContext
 func CheckConfigFile(path string) bool {
+	filePath := GetHomeDirectory() + "/.letme-alpha/letme-config"
 
-	type Config map[string]map[string]interface{}
-	var config Config
-
-	// Decode the TOML file into the config map
-	md, err := toml.DecodeFile(path, &config)
-	if err != nil {
-		fmt.Println("letme: error decoding TOML file:", err)
-		return false
+	// Check if the file exists
+	if _, err := os.Stat(filePath); err != nil {
+		CheckAndReturnError(err)
 	}
 
-	// Iterate over each table and validate its keys
-	for tableName, table := range config {
-		// Check for mandatory keys
+	config, err := ini.Load(filePath)
+	CheckAndReturnError(err)
+
+	sections := config.Sections()
+
+	for _, section := range sections {
+		if section.Name() == "DEFAULT" {
+			continue
+		}
 		for _, key := range MandatoryKeys {
-			if _, ok := table[key]; !ok {
-				fmt.Printf("letme: missing mandatory key '%s' in table '%s'\n", key, tableName)
+			if ok := section.HasKey(key); !ok {
+				fmt.Printf("letme: missing mandatory key '%s' in table '%s'. Config file should have the following structure:\n", key, section.Name())
 				return false
 			}
 		}
-		for key := range table {
+
+		for _, key := range section.KeyStrings() {
 			if !ExpectedKeys[key] {
-				fmt.Printf("Error: Invalid key '%s' in table '%s'\n", key, tableName)
+				fmt.Printf("Error: Invalid key '%s' in table '%s'. Config file should have the following structure:\n", key, section.Name())
 				return false
 			}
 		}
 	}
 
-	// Check for any undecoded keys
-	undecoded := md.Undecoded()
-	if len(undecoded) > 0 {
-		fmt.Println("Undecoded keys found:")
-		for _, key := range undecoded {
-			fmt.Println(key)
-		}
-		return false
-	}
 	return true
 }
 
@@ -140,22 +123,37 @@ func CheckAndReturnError(err error) {
 }
 
 // Marshalls data into a toml file (config-file)
-func TemplateConfigFile() string {
-	var (
-		buf = new(bytes.Buffer)
-	)
-	err := toml.NewEncoder(buf).Encode(map[string]interface{}{
-		"contextName": map[string]interface{}{
-			"aws_source_profile":        "default",
-			"aws_source_profile_region": "eu-west-3",
-			"dynamodb_table":            "customers",
-			"mfa_arn":                   "arn:aws:iam::4002019901:mfa/user",
-			"session_name":              "user_letme",
-			"session_duration":          3600,
-		},
-	})
+func TemplateConfigFile(stdout bool) {
+	template := ini.Empty()
+
+	section, err := template.NewSection("default")
 	CheckAndReturnError(err)
-	return buf.String()
+
+	data := &LetmeContext{
+		AwsSourceProfile:       "default",
+		AwsSourceProfileRegion: "eu-west-3",
+		AwsDynamoDbTable:       "customers",
+		AwsMfaArn:              "arn:aws:iam::4002019901:mfa/user",
+		AwsSessionName:         "user_letme",
+		AwsSessionDuration:     3600,
+	}
+
+	err = section.ReflectFrom(data)
+	CheckAndReturnError(err)
+
+	if stdout {
+		_, err = template.WriteTo(os.Stdout)
+		CheckAndReturnError(err)
+		os.Exit(1)
+	} else {
+		fileName := "letme-config"
+		homeDir := GetHomeDirectory()
+		configFile, err := os.Create(filepath.Join(homeDir+"/.letme-alpha", filepath.Base(fileName)))
+		defer configFile.Close()
+		CheckAndReturnError(err)
+		_, err = template.WriteTo(configFile)
+		CheckAndReturnError(err)
+	}
 }
 
 // Gets the user $HOME directory

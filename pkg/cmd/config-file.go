@@ -1,7 +1,6 @@
 package letme
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,7 +13,7 @@ var configFileCmd = &cobra.Command{
 	Use:   "config-file",
 	Short: "Creates the letme configuration file",
 	Long: `Creates a configuration file with all the needed key pairs.
-The config file is created in your '$HOME/.letme/' directory, letme reads this file
+The config file is created in your '$HOME/.letme-alpha/' directory, letme reads this file
 and performs the operations based from the user-specified values.
         `,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -27,53 +26,37 @@ and performs the operations based from the user-specified values.
 		fileName := "letme-config"
 		homeDir := utils.GetHomeDirectory()
 
-		// if verify flag is passed, verify the letme-config file
 		if verifyFlag {
-			result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
-			if result {
+			if _, err := os.Stat(homeDir + "/.letme-alpha/" + fileName); err == nil {
+				result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme-alpha/letme-config")
+				if !result {
+					utils.TemplateConfigFile(true)
+				}
+				fmt.Println("letme: config file is valid!")
 				os.Exit(0)
 			} else {
-				fmt.Printf(
-					`
-letme: config file should have the following structure:
-%v
-`, utils.TemplateConfigFile())
-				os.Exit(1)
+				utils.CheckAndReturnError(err)
 			}
 		}
 
 		// creates the directory + config file or just the config file if the directory already exists
 		// then writes the marshalled values on a toml document (letme-config).
-		if _, err := os.Stat(homeDir + "/.letme/"); err != nil {
-			err = os.Mkdir(homeDir+"/.letme/", 0755)
+		if _, err := os.Stat(homeDir + "/.letme-alpha/"); err != nil {
+			err = os.Mkdir(homeDir+"/.letme-alpha/", 0755)
 			utils.CheckAndReturnError(err)
 
-			configFile, err := os.Create(filepath.Join(homeDir+"/.letme/", filepath.Base(fileName)))
+			utils.TemplateConfigFile(false)
+			err = os.Chmod(filepath.Join(homeDir+"/.letme-alpha/", filepath.Base(fileName)), 0600)
 			utils.CheckAndReturnError(err)
-			defer configFile.Close()
-
-			writer := bufio.NewWriter(configFile)
-			_, err = fmt.Fprintf(writer, "%v", utils.TemplateConfigFile())
-			utils.CheckAndReturnError(err)
-			writer.Flush()
-			err = os.Chmod(filepath.Join(homeDir+"/.letme/", filepath.Base(fileName)), 0600)
-			utils.CheckAndReturnError(err)
-			fmt.Println("letme: edit the config file at " + homeDir + "/.letme/letme-config with your values.")
-		} else if _, err := os.Stat(homeDir + "/.letme/"); err == nil {
-			if _, err = os.Stat(homeDir + "/.letme/" + fileName); err == nil && !(forceFlag) {
-				fmt.Println("letme: letme-config file already exists at: " + homeDir + "/.letme/" + fileName)
+			fmt.Println("letme: edit the config file at " + homeDir + "/.letme-alpha/letme-config with your values.")
+		} else if _, err := os.Stat(homeDir + "/.letme-alpha/"); err == nil {
+			if _, err = os.Stat(homeDir + "/.letme-alpha/" + fileName); err == nil && !(forceFlag) {
+				fmt.Println("letme: letme-config file already exists at: " + homeDir + "/.letme-alpha/" + fileName)
 				fmt.Println("letme: to restore the letme-config file, pass the -f, --force flags or delete the letme-config file manually.")
 				os.Exit(0)
 			}
-			configFile, err := os.Create(filepath.Join(homeDir+"/.letme/", filepath.Base(fileName)))
-			utils.CheckAndReturnError(err)
-			defer configFile.Close()
-
-			writer := bufio.NewWriter(configFile)
-			_, err = fmt.Fprintf(writer, "%v", utils.TemplateConfigFile())
-			utils.CheckAndReturnError(err)
-			writer.Flush()
-			fmt.Println("letme: edit the config file at " + homeDir + "/.letme/letme-config with your values.")
+			utils.TemplateConfigFile(false)
+			fmt.Println("letme: edit the config file at " + homeDir + "/.letme-alpha/letme-config with your values.")
 		}
 	},
 }

@@ -83,7 +83,7 @@ within the AWS cli binary.`,
 			authMethod = "assume-role"
 		}
 
-		cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(letmeContext.AwsSourceProfile))
+		cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(letmeContext.AwsSourceProfile), config.WithRegion(letmeContext.AwsSourceProfileRegion))
 		utils.CheckAndReturnError(err)
 
 		account := utils.GetAccount(letmeContext.AwsDynamoDbTable, cfg, args[0])

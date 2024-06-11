@@ -454,8 +454,11 @@ func UpdateContext(context string) {
 		// Saves the updated data onto the file
 		content.SaveTo(filePath)
 
-	} else if !os.IsNotExist(err) {
+	} else if os.IsNotExist(err) {
 		// An unexpected error occurred
+		err = fmt.Errorf("letme: Could not locate any config file. Please run 'letme config-file' to create one.")
+		CheckAndReturnError(err)
+	} else {
 		CheckAndReturnError(err)
 	}
 }

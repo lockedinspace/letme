@@ -53,12 +53,9 @@ type LetmeContext struct {
 }
 
 type DynamoDbAccountConfig struct {
-	Id          int      `dynamodbav:"id"`
-	Description string   `dynamodbav:"description"`
-	Name        string   `dynamodbav:"name"`
-	Region      []string `dynamodbav:"region"`
-	Role        []string `dynamodbav:"role"`
-	Tier        string   `dynamodbav:"tier"`
+	Name   string   `dynamodbav:"name"`
+	Region []string `dynamodbav:"region"`
+	Role   []string `dynamodbav:"role"`
 }
 
 type ProfileConfig struct {

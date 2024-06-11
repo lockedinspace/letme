@@ -10,25 +10,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ProfileConfig struct {
-	Output string `ini:"output"`
-	Region string `ini:"region"`
-}
-
-type ProfileCredential struct {
-	AccessKey    string `ini:"aws_access_key_id"`
-	SecretKey    string `ini:"aws_secret_access_key"`
-	SessionToken string `ini:"aws_session_token"`
-}
-
-type DynamoDbAccountConfig struct {
-	Id          int      `dynamodbav:"id"`
-	Description string   `dynamodbav:"description"`
-	Name        string   `dynamodbav:"name"`
-	Region      []string `dynamodbav:"region"`
-	Role        []string `dynamodbav:"role"`
-}
-
 var obtainCmd = &cobra.Command{
 	Use:     "obtain",
 	Aliases: []string{"ob"},

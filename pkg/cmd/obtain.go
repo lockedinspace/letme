@@ -35,6 +35,7 @@ within the AWS cli binary.`,
 		// get flags
 		inlineTokenMfa, _ := cmd.Flags().GetString("inline-mfa")
 		renew, _ := cmd.Flags().GetBool("renew")
+		credentialProcess, _ := cmd.Flags().GetBool("credential-process")
 		localCredentialProcessFlagV1, _ := cmd.Flags().GetBool("v1")
 
 		// get the current context
@@ -42,6 +43,13 @@ within the AWS cli binary.`,
 		letmeContext := utils.GetContextData(currentContext)
 		if letmeContext.AwsSessionDuration == 0 {
 			letmeContext.AwsSessionDuration = 3600
+		}
+
+		cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(letmeContext.AwsSourceProfile), config.WithRegion(letmeContext.AwsSourceProfileRegion))
+		utils.CheckAndReturnError(err)
+		account := utils.GetAccount(letmeContext.AwsDynamoDbTable, cfg, args[0])
+		if credentialProcess {
+			utils.AwsConfigFileCredentialsProcessV1(args[0], account.Region[0])
 		}
 
 		// overwrite the session name variable if the user provides it
@@ -64,10 +72,6 @@ within the AWS cli binary.`,
 			authMethod = "assume-role"
 		}
 
-		cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(letmeContext.AwsSourceProfile), config.WithRegion(letmeContext.AwsSourceProfileRegion))
-		utils.CheckAndReturnError(err)
-
-		account := utils.GetAccount(letmeContext.AwsDynamoDbTable, cfg, args[0])
 		var profileCredential utils.ProfileCredential
 		var profileConfig utils.ProfileConfig
 		switch {

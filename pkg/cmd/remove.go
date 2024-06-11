@@ -28,36 +28,26 @@ and '$HOME/.aws/config' files.
 		_, errCred := os.OpenFile(utils.GetHomeDirectory()+"/.aws/credentials", os.O_RDWR|os.O_APPEND, 0600)
 		_, errConf := os.OpenFile(utils.GetHomeDirectory()+"/.aws/config", os.O_RDWR|os.O_APPEND, 0600)
 		if !(errors.Is(errCred, os.ErrNotExist)) && !(errors.Is(errConf, os.ErrNotExist)) {
+			accountInFile := utils.CheckAccountLocally(args[0])
 			switch {
-			case utils.CheckAccountLocally(args[0]) == "true,true":
-				config.DeleteSection("profile" + args[0])
+			case accountInFile["credentials"]:
 				credentials.DeleteSection(args[0])
-				utils.RemoveAccountFromDatabaseFile(args[0])
-				if err := config.SaveTo(utils.GetHomeDirectory() + "/.aws/config"); err != nil {
-					utils.CheckAndReturnError(err)
-				}
 				if err := credentials.SaveTo(utils.GetHomeDirectory() + "/.aws/credentials"); err != nil {
 					utils.CheckAndReturnError(err)
 				}
-				fmt.Println("Removed profile '" + args[0] + "' entry from config file.")
-			case utils.CheckAccountLocally(args[0]) == "false,true":
+				fmt.Println("letme: removed profile '" + args[0] + "' entry from credentials file.")
+				fallthrough
+			case accountInFile["config"]:
 				config.DeleteSection("profile " + args[0])
-				utils.RemoveAccountFromDatabaseFile(args[0])
 				if err := config.SaveTo(utils.GetHomeDirectory() + "/.aws/config"); err != nil {
 					utils.CheckAndReturnError(err)
 				}
-				fmt.Println("Removed profile '" + args[0] + "' entry from config file.")
-			case utils.CheckAccountLocally(args[0]) == "true,false":
-				credentials.DeleteSection(args[0])
-				utils.RemoveAccountFromDatabaseFile(args[0])
-				if err := credentials.SaveTo(utils.GetHomeDirectory() + "/.aws/credentials"); err != nil {
-					utils.CheckAndReturnError(err)
-				}
-				fmt.Println("Removed profile '" + args[0] + "' entry from config file.")
+				fmt.Println("letme: removed profile '" + args[0] + "' entry from config file.")
 			default:
 				fmt.Println("letme: unable to remove profile '" + args[0] + "', not found on your local aws files")
 				os.Exit(1)
 			}
+			utils.RemoveAccountFromDatabaseFile(args[0])
 		}
 	},
 }

@@ -170,41 +170,59 @@ func CacheFileExists() bool {
 }
 
 // Marshalls data into a string used for the aws config file but with the v1 output protocol
-func AwsConfigFileCredentialsProcessV1(accountName string, region string) string {
-	return fmt.Sprintf(
-		`#s-%v
-[profile %v]
-credential_process = letme obtain %v --v1
-region = %v
-output = json
-#e-%v
-`, accountName, accountName, accountName, region, accountName)
-}
-
-// Check if an account is present on the local aws credentials/config files
-func CheckAccountLocally(account string) string {
+func AwsConfigFileCredentialsProcessV1(accountName string, region string) {
 	credentials := AwsCredsFileReadV2()
 	config := AwsConfigFileReadV2()
 
-	accountCredExists := false
-	accountConfExists := false
+	accountInFile := CheckAccountLocally(accountName)
+	switch {
+	case accountInFile["credentials"]:
+		credentials.DeleteSection(accountName)
+		err := credentials.SaveTo(GetHomeDirectory() + "/.aws/credentials")
+		fmt.Println("letme: removed profile '" + accountName + "' entry from credentials file.")
+		CheckAndReturnError(err)
+		fallthrough
+	case accountInFile["config"] && !config.Section("profile "+accountName).HasKey("credential_process"):
+		_, err := config.Section("profile "+accountName).NewKey("credential_process", "letme obtain "+accountName+" --v1")
+		CheckAndReturnError(err)
+		err = config.SaveTo(GetHomeDirectory() + "/.aws/config")
+		CheckAndReturnError(err)
+	default:
+		section, errSection := config.NewSection("profile " + accountName)
+		CheckAndReturnError(errSection)
+		_, errCredentialProcess := section.NewKey("credential_process", "letme obtain "+accountName+" --v1")
+		CheckAndReturnError(errCredentialProcess)
+		_, errRegion := section.NewKey("region", region)
+		CheckAndReturnError(errRegion)
+		_, errOutput := section.NewKey("output", "json")
+		CheckAndReturnError(errOutput)
+		err := config.SaveTo(GetHomeDirectory() + "/.aws/config")
+		CheckAndReturnError(err)
+	}
+
+	fmt.Println("letme: configured credential proces V1 for account " + accountName)
+	os.Exit(0)
+}
+
+// Check if an account is present on the local aws credentials/config files
+func CheckAccountLocally(account string) map[string]bool {
+	credentials := AwsCredsFileReadV2()
+	config := AwsConfigFileReadV2()
+
+	accountInFile := make(map[string]bool)
+
+	accountInFile["credentials"] = false
+	accountInFile["config"] = false
 
 	if credentials.HasSection(account) {
-		accountCredExists = true
+		accountInFile["credentials"] = true
 	}
 
 	if config.HasSection("profile " + account) {
-		accountConfExists = true
+		accountInFile["config"] = true
 	}
 
-	if accountCredExists && accountConfExists {
-		return fmt.Sprintf("%t,%t", accountCredExists, accountConfExists)
-	} else if !(accountCredExists) && accountConfExists {
-		return fmt.Sprintf("%t,%t", accountCredExists, accountConfExists)
-	} else if accountCredExists && !(accountConfExists) {
-		return fmt.Sprintf("%t,%t", accountCredExists, accountConfExists)
-	}
-	return ""
+	return accountInFile
 }
 
 // Struct which states the credential process output for the v1 protocol
@@ -574,9 +592,25 @@ func GetContextData(context string) *LetmeContext {
 }
 
 func AssumeRole(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa string, account *DynamoDbAccountConfig, renew bool, localCredentialProcessFlagV1 bool, authMethod string) (ProfileCredential, ProfileConfig) {
-	// renew := true
-	sesAwsSts := sts.NewFromConfig(cfg)
+	// If credentials not expired
+	if CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1 {
+		cachedCredentials := ReturnAccountCredentials(account.Name)
+		profileCredential := ProfileCredential{
+			AccessKey:    cachedCredentials["AccessKeyId"],
+			SecretKey:    cachedCredentials["SecretAccessKey"],
+			SessionToken: cachedCredentials["SessionToken"],
+		}
 
+		profileConfig := ProfileConfig{
+			Output: "json",
+			Region: account.Region[0],
+		}
+
+		fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
+		return profileCredential, profileConfig
+	}
+
+	sesAwsSts := sts.NewFromConfig(cfg)
 	var input *sts.AssumeRoleInput
 
 	switch {
@@ -596,7 +630,7 @@ func AssumeRole(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa strin
 			RoleArn:         &account.Role[0],
 			RoleSessionName: &letmeContext.AwsSessionName,
 			SerialNumber:    &letmeContext.AwsMfaArn,
-			TokenCode:       &tokenMfa,
+			// TokenCode:       &tokenMfa,
 			DurationSeconds: &letmeContext.AwsSessionDuration,
 		}
 	default:
@@ -620,27 +654,37 @@ func AssumeRole(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa strin
 		Output: "json",
 		Region: account.Region[0],
 	}
-
 	switch {
-	case renew || !CheckAccountAvailability(account.Name):
-		DatabaseFile(account.Name, letmeContext.AwsSessionDuration, CredentialsProcessOutput(profileCredential.AccessKey, profileCredential.SecretKey, profileCredential.SessionToken, *resp.Credentials.Expiration), authMethod) //only when we really authenticate against aws
-	case CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1:
-		fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
-		cachedCredentials := ReturnAccountCredentials(account.Name)
-		profileCredential.AccessKey = cachedCredentials["AccessKeyId"]
-		profileCredential.SecretKey = cachedCredentials["SecretAccessKey"]
-		profileCredential.SessionToken = cachedCredentials["SessionToken"]
-	default:
+	case localCredentialProcessFlagV1:
 		fmt.Printf(CredentialsProcessOutput(profileCredential.AccessKey, profileCredential.SecretKey, profileCredential.SessionToken, *resp.Credentials.Expiration))
 		os.Exit(0)
+	case renew || !CheckAccountAvailability(account.Name):
+		DatabaseFile(account.Name, letmeContext.AwsSessionDuration, CredentialsProcessOutput(profileCredential.AccessKey, profileCredential.SecretKey, profileCredential.SessionToken, *resp.Credentials.Expiration), authMethod) //only when we really authenticate against aws
 	}
 
 	return profileCredential, profileConfig
 }
 
 func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa string, account *DynamoDbAccountConfig, renew bool, localCredentialProcessFlagV1 bool, authMethod string) (ProfileCredential, ProfileConfig) {
-	sesAwsSts := sts.NewFromConfig(cfg)
+	// If credentials not expired
+	if CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1 {
+		cachedCredentials := ReturnAccountCredentials(account.Name)
+		profileCredential := ProfileCredential{
+			AccessKey:    cachedCredentials["AccessKeyId"],
+			SecretKey:    cachedCredentials["SecretAccessKey"],
+			SessionToken: cachedCredentials["SessionToken"],
+		}
 
+		profileConfig := ProfileConfig{
+			Output: "json",
+			Region: account.Region[0],
+		}
+
+		fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
+		return profileCredential, profileConfig
+	}
+
+	sesAwsSts := sts.NewFromConfig(cfg)
 	var input *sts.AssumeRoleInput
 	var output *sts.AssumeRoleOutput
 	var err error
@@ -715,17 +759,11 @@ func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMf
 	}
 
 	switch {
-	case renew || !CheckAccountAvailability(account.Name):
-		DatabaseFile(account.Name, letmeContext.AwsSessionDuration, CredentialsProcessOutput(profileCredential.AccessKey, profileCredential.SecretKey, profileCredential.SessionToken, *output.Credentials.Expiration), authMethod) //only when we really authenticate against aws
-	case !localCredentialProcessFlagV1:
-		fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
-		cachedCredentials := ReturnAccountCredentials(account.Name)
-		profileCredential.AccessKey = cachedCredentials["AccessKeyId"]
-		profileCredential.SecretKey = cachedCredentials["SecretAccessKey"]
-		profileCredential.SessionToken = cachedCredentials["SessionToken"]
-	default:
+	case localCredentialProcessFlagV1:
 		fmt.Printf(CredentialsProcessOutput(profileCredential.AccessKey, profileCredential.SecretKey, profileCredential.SessionToken, *output.Credentials.Expiration))
 		os.Exit(0)
+	case renew || !CheckAccountAvailability(account.Name):
+		DatabaseFile(account.Name, letmeContext.AwsSessionDuration, CredentialsProcessOutput(profileCredential.AccessKey, profileCredential.SecretKey, profileCredential.SessionToken, *output.Credentials.Expiration), authMethod) //only when we really authenticate against aws
 	}
 	return profileCredential, profileConfig
 }

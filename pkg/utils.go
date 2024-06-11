@@ -627,7 +627,7 @@ func AssumeRole(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa strin
 	case CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1:
 		fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
 		cachedCredentials := ReturnAccountCredentials(account.Name)
-		profileCredential.AccessKey = cachedCredentials["AccessKey"]
+		profileCredential.AccessKey = cachedCredentials["AccessKeyId"]
 		profileCredential.SecretKey = cachedCredentials["SecretAccessKey"]
 		profileCredential.SessionToken = cachedCredentials["SessionToken"]
 	default:
@@ -720,7 +720,7 @@ func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMf
 	case !localCredentialProcessFlagV1:
 		fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
 		cachedCredentials := ReturnAccountCredentials(account.Name)
-		profileCredential.AccessKey = cachedCredentials["AccessKey"]
+		profileCredential.AccessKey = cachedCredentials["AccessKeyId"]
 		profileCredential.SecretKey = cachedCredentials["SecretAccessKey"]
 		profileCredential.SessionToken = cachedCredentials["SessionToken"]
 	default:

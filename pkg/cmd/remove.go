@@ -31,6 +31,12 @@ and '$HOME/.aws/config' files.
 			accountInFile := utils.CheckAccountLocally(args[0])
 			switch {
 			case accountInFile["credentials"]:
+				credentialSection, err := credentials.GetSection(args[0])
+				utils.CheckAndReturnError(err)
+				if credentialSection.Comment != "; letme managed" {
+					err := fmt.Errorf("Account " + args[0] + " is not managed by letme, so it won't be deleted")
+					utils.CheckAndReturnError(err)
+				}
 				credentials.DeleteSection(args[0])
 				if err := credentials.SaveTo(utils.GetHomeDirectory() + "/.aws/credentials"); err != nil {
 					utils.CheckAndReturnError(err)
@@ -38,6 +44,12 @@ and '$HOME/.aws/config' files.
 				fmt.Println("letme: removed profile '" + args[0] + "' entry from credentials file.")
 				fallthrough
 			case accountInFile["config"]:
+				configSection, err := config.GetSection("profile " + args[0])
+				utils.CheckAndReturnError(err)
+				if configSection.Comment != "; letme managed" {
+					err := fmt.Errorf("Account " + args[0] + " is not managed by letme, so it won't be deleted")
+					utils.CheckAndReturnError(err)
+				}
 				config.DeleteSection("profile " + args[0])
 				if err := config.SaveTo(utils.GetHomeDirectory() + "/.aws/config"); err != nil {
 					utils.CheckAndReturnError(err)

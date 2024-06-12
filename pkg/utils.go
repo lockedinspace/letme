@@ -419,8 +419,7 @@ func LoadAwsCredentials(profileName string, profileCredential ProfileCredential)
 	credentialsFile := AwsCredsFileReadV2()
 
 	credentialsSection := credentialsFile.Section(profileName)
-	now := time.Now().Format("Jan 2, 2006 15:04:05")
-	credentialsSection.Comment = now
+	credentialsSection.Comment = "letme managed"
 
 	if err := credentialsSection.ReflectFrom(&profileCredential); err != nil {
 		CheckAndReturnError(err)
@@ -435,6 +434,7 @@ func LoadAwsConfig(profileName string, profileConfig ProfileConfig) {
 	configFile := AwsConfigFileReadV2()
 
 	configSection := configFile.Section("profile " + profileName)
+	configSection.Comment = "letme managed"
 	if err := configSection.ReflectFrom(&profileConfig); err != nil {
 		CheckAndReturnError(err)
 	}

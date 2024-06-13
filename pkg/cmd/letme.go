@@ -3,16 +3,17 @@ package letme
 import (
 	"context"
 	"fmt"
-	"github.com/google/go-github/v48/github"
-	"github.com/hashicorp/go-version"
-	"github.com/lockedinspace/letme/pkg"
-	"github.com/spf13/cobra"
 	"os"
 	"runtime"
+
+	"github.com/google/go-github/v48/github"
+	"github.com/hashicorp/go-version"
+	utils "github.com/hectorruiz-it/letme-alpha/pkg"
+	"github.com/spf13/cobra"
 )
 
-var currentVersion = "v0.2.0-rc3"
-var versionPrettyName = "Refurbished beagle"
+var currentVersion = "v0.2.0-rc4"
+var versionPrettyName = "New Horizons"
 var rootCmd = &cobra.Command{
 	Use:   "letme",
 	Short: "Obtain AWS credentials from another account",

@@ -1,4 +1,4 @@
-module github.com/hectorruiz-it/letme-alpha
+module github.com/github.com/lockedinspace/letme
 
 go 1.22
 

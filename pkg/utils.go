@@ -71,7 +71,7 @@ type ProfileCredential struct {
 
 // Verify if the config-file respects the struct LetmeContext
 func CheckConfigFile(path string) bool {
-	filePath := GetHomeDirectory() + "/.letme-alpha/letme-config"
+	filePath := GetHomeDirectory() + "/.letme/letme-config"
 
 	// Check if the file exists
 	if _, err := os.Stat(filePath); err != nil {
@@ -145,7 +145,7 @@ func TemplateConfigFile(stdout bool) {
 	} else {
 		fileName := "letme-config"
 		homeDir := GetHomeDirectory()
-		configFile, err := os.Create(filepath.Join(homeDir+"/.letme-alpha", filepath.Base(fileName)))
+		configFile, err := os.Create(filepath.Join(homeDir+"/.letme", filepath.Base(fileName)))
 		defer configFile.Close()
 		CheckAndReturnError(err)
 		_, err = template.WriteTo(configFile)
@@ -162,7 +162,7 @@ func GetHomeDirectory() string {
 
 // Checks if the .letme-cache file exists, this file is not supported starting from versions 0.2.0 and above
 func CacheFileExists() bool {
-	if _, err := os.Stat(GetHomeDirectory() + "/.letme-alpha/.letme-cache"); err == nil {
+	if _, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-cache"); err == nil {
 		return true
 	} else {
 		return false
@@ -263,22 +263,22 @@ type Account struct {
 // Create a file which stores the last time when credentials where requested. Then query if the account exists,
 // if not, it will create its first entry.
 func DatabaseFile(accountName string, sessionDuration int32, v1Credentials string, authMethod string) {
-	databaseFileWriter, err := os.OpenFile(GetHomeDirectory()+"/.letme-alpha/.letme-db", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	databaseFileWriter, err := os.OpenFile(GetHomeDirectory()+"/.letme/.letme-db", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	CheckAndReturnError(err)
-	databaseFileReader, err := os.ReadFile(GetHomeDirectory() + "/.letme-alpha/.letme-db")
+	databaseFileReader, err := os.ReadFile(GetHomeDirectory() + "/.letme/.letme-db")
 	CheckAndReturnError(err)
-	fi, err := os.Stat(GetHomeDirectory() + "/.letme-alpha/.letme-db")
+	fi, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-db")
 	CheckAndReturnError(err)
 	var idents []Account
 	if fi.Size() > 0 {
 		//check if the json is valid, but ensure that the file has content
 		if !json.Valid([]byte(databaseFileReader)) && fi.Size() > 0 {
-			fmt.Printf("letme: " + GetHomeDirectory() + "/.letme-alpha/.letme-db" + " is not JSON valid. Remove the file and try again.\n")
+			fmt.Printf("letme: " + GetHomeDirectory() + "/.letme/.letme-db" + " is not JSON valid. Remove the file and try again.\n")
 			os.Exit(1)
 		}
 		err = json.Unmarshal(databaseFileReader, &idents)
 		CheckAndReturnError(err)
-		err = os.Truncate(GetHomeDirectory()+"/.letme-alpha/.letme-db", 0)
+		err = os.Truncate(GetHomeDirectory()+"/.letme/.letme-db", 0)
 		CheckAndReturnError(err)
 		for i := range idents {
 			//when file is populated and client exist, just update fields
@@ -322,13 +322,13 @@ func DatabaseFile(accountName string, sessionDuration int32, v1Credentials strin
 // Compare the current local time with the expiry field in the .letme-db file. If current time has not yet surpassed
 // expiry time, return true. Else, return false indicating new credentials need to be requested.
 func CheckAccountAvailability(accountName string) bool {
-	if _, err := os.Stat(GetHomeDirectory() + "/.letme-alpha/.letme-db"); err == nil {
-		databaseFileReader, err := os.ReadFile(GetHomeDirectory() + "/.letme-alpha/.letme-db")
+	if _, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-db"); err == nil {
+		databaseFileReader, err := os.ReadFile(GetHomeDirectory() + "/.letme/.letme-db")
 		CheckAndReturnError(err)
-		fi, err := os.Stat(GetHomeDirectory() + "/.letme-alpha/.letme-db")
+		fi, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-db")
 		CheckAndReturnError(err)
 		if !json.Valid([]byte(databaseFileReader)) && fi.Size() > 0 {
-			fmt.Printf("letme: " + GetHomeDirectory() + "/.letme-alpha/.letme-db" + " is not JSON valid. Remove the file and try again.\n")
+			fmt.Printf("letme: " + GetHomeDirectory() + "/.letme/.letme-db" + " is not JSON valid. Remove the file and try again.\n")
 			os.Exit(1)
 		}
 		var idents []Account
@@ -346,7 +346,7 @@ func CheckAccountAvailability(accountName string) bool {
 			}
 		}
 	} else {
-		_, err := os.OpenFile(GetHomeDirectory()+"/.letme-alpha/.letme-db", os.O_CREATE, 0600)
+		_, err := os.OpenFile(GetHomeDirectory()+"/.letme/.letme-db", os.O_CREATE, 0600)
 		CheckAndReturnError(err)
 	}
 	return false
@@ -354,7 +354,7 @@ func CheckAccountAvailability(accountName string) bool {
 
 // Check if the account to retrieve stored credentials exist, if true, return the credentials to stdout
 func ReturnAccountCredentials(accountName string) map[string]string {
-	databaseFileReader, err := os.ReadFile(GetHomeDirectory() + "/.letme-alpha/.letme-db")
+	databaseFileReader, err := os.ReadFile(GetHomeDirectory() + "/.letme/.letme-db")
 	CheckAndReturnError(err)
 	var idents []Account
 	var result string
@@ -376,7 +376,7 @@ func ReturnAccountCredentials(accountName string) map[string]string {
 
 // Remove an account from the database file
 func RemoveAccountFromDatabaseFile(accountName string) {
-	jsonData, err := os.ReadFile(GetHomeDirectory() + "/.letme-alpha/.letme-db")
+	jsonData, err := os.ReadFile(GetHomeDirectory() + "/.letme/.letme-db")
 	CheckAndReturnError(err)
 	// Unmarshal JSON data into a slice of maps
 	var data []map[string]interface{}
@@ -398,7 +398,7 @@ func RemoveAccountFromDatabaseFile(accountName string) {
 	CheckAndReturnError(err)
 
 	// Write the prettified JSON data to the file /test.json
-	if err := os.WriteFile(GetHomeDirectory()+"/.letme-alpha/.letme-db", updatedJsonData, 0600); err != nil {
+	if err := os.WriteFile(GetHomeDirectory()+"/.letme/.letme-db", updatedJsonData, 0600); err != nil {
 		CheckAndReturnError(err)
 	}
 }
@@ -445,7 +445,7 @@ func LoadAwsConfig(profileName string, profileConfig ProfileConfig) {
 
 // Create the .letme-usersettings file which holds the current context and more
 func UpdateContext(context string) {
-	filePath := GetHomeDirectory() + "/.letme-alpha/.letme-usersettings"
+	filePath := GetHomeDirectory() + "/.letme/.letme-usersettings"
 
 	// Check if the file exists
 	if _, err := os.Stat(filePath); err == nil {
@@ -479,7 +479,7 @@ func UpdateContext(context string) {
 }
 
 func GetCurrentContext() string {
-	filePath := GetHomeDirectory() + "/.letme-alpha/.letme-usersettings"
+	filePath := GetHomeDirectory() + "/.letme/.letme-usersettings"
 
 	// Check if the file exists if not exists returns "general"
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -505,7 +505,7 @@ func GetCurrentContext() string {
 }
 
 func GetAvalaibleContexts() []string {
-	filePath := GetHomeDirectory() + "/.letme-alpha/letme-config"
+	filePath := GetHomeDirectory() + "/.letme/letme-config"
 	content, err := ini.Load(filePath)
 	// content.BlockMode = false
 	if err != nil {
@@ -570,7 +570,7 @@ func GetSortedTable(AwsDynamoDbTable string, cfg aws.Config) {
 }
 
 func GetContextData(context string) *LetmeContext {
-	filePath := GetHomeDirectory() + "/.letme-alpha/letme-config"
+	filePath := GetHomeDirectory() + "/.letme/letme-config"
 
 	// Check if the file exists
 	if _, err := os.Stat(filePath); err != nil {

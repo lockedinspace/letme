@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	utils "github.com/hectorruiz-it/letme-alpha/pkg"
+	utils "github.com/github.com/lockedinspace/letme/pkg"
 	"github.com/spf13/cobra"
 )
 

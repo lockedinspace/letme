@@ -740,6 +740,7 @@ func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMf
 		// Chained AssumneRoles with credentials from previous iterations
 		default:
 			cfg, err := config.LoadDefaultConfig(context.TODO(),
+				config.WithRegion(account.Region[0]),
 				config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
 					Value: aws.Credentials{
 						AccessKeyID: *output.Credentials.AccessKeyId, SecretAccessKey: *output.Credentials.SecretAccessKey, SessionToken: *output.Credentials.SessionToken,

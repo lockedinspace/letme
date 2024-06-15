@@ -146,8 +146,8 @@ func TemplateConfigFile(stdout bool) {
 		fileName := "letme-config"
 		homeDir := GetHomeDirectory()
 		configFile, err := os.Create(filepath.Join(homeDir+"/.letme", filepath.Base(fileName)))
-		defer configFile.Close()
 		CheckAndReturnError(err)
+		defer configFile.Close()
 		_, err = template.WriteTo(configFile)
 		CheckAndReturnError(err)
 	}
@@ -470,9 +470,18 @@ func UpdateContext(context string) {
 		content.SaveTo(filePath)
 
 	} else if os.IsNotExist(err) {
-		// An unexpected error occurred
-		err = fmt.Errorf("letme: Could not locate any config file. Please run 'letme config-file' to create one.")
+		userSettings, err := os.Create(filePath)
 		CheckAndReturnError(err)
+		defer userSettings.Close()
+		content := ini.Empty()
+		contextSection := content.Section("context")
+		err = contextSection.ReflectFrom(&Context{
+			ActiveContext: context,
+		})
+		CheckAndReturnError(err)
+		_, err = content.WriteTo(userSettings)
+		CheckAndReturnError(err)
+		// An unexpected error occurred
 	} else {
 		CheckAndReturnError(err)
 	}
@@ -554,6 +563,7 @@ func GetSortedTable(AwsDynamoDbTable string, cfg aws.Config) {
 	for _, item := range resp.Items {
 		var account DynamoDbAccountConfig
 		err = attributevalue.UnmarshalMap(item, &account)
+		CheckAndReturnError(err)
 		sorted = append(sorted, account.Name+"\t"+account.Region[0])
 		nameLengths = append(nameLengths, len(account.Name))
 	}

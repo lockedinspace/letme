@@ -83,7 +83,7 @@ within the AWS cli binary.`,
 
 		utils.LoadAwsCredentials(account.Name, profileCredential)
 		utils.LoadAwsConfig(account.Name, profileConfig)
-		fmt.Println("letme: use the argument --profile '" + account.Name + "' to interact with the account.")
+		fmt.Println("letme: use the argument --profile '"+ account.Name +"' to interact with the account.")
 	},
 }
 

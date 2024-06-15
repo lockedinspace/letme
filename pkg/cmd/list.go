@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/config"
-	utils "github.com/github.com/lockedinspace/letme/pkg"
+	utils "github.com/lockedinspace/letme/pkg"
 	"github.com/spf13/cobra"
 )
 

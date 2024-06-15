@@ -1,4 +1,4 @@
-module github.com/github.com/lockedinspace/letme
+module github.com/lockedinspace/letme
 
 go 1.22
 

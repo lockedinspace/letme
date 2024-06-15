@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	utils "github.com/github.com/lockedinspace/letme/pkg"
+	utils "github.com/lockedinspace/letme/pkg"
 	"github.com/spf13/cobra"
 )
 

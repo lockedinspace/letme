@@ -6,9 +6,9 @@ import (
 	"os"
 	"runtime"
 
-	utils "github.com/github.com/lockedinspace/letme/pkg"
 	"github.com/google/go-github/v48/github"
 	"github.com/hashicorp/go-version"
+	utils "github.com/lockedinspace/letme/pkg"
 	"github.com/spf13/cobra"
 )
 

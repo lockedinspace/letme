@@ -848,7 +848,7 @@ func GetContextData(context string) *LetmeContext {
 
 func AssumeRole(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa string, account *DynamoDbAccountConfig, renew bool, localCredentialProcessFlagV1 bool, authMethod string) (ProfileCredential, ProfileConfig) {
 	// If credentials not expired
-	if CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1 {
+	if CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1 && !renew {
 		cachedCredentials := ReturnAccountCredentials(account.Name)
 		profileCredential := ProfileCredential{
 			AccessKey:    cachedCredentials["AccessKeyId"],
@@ -922,7 +922,7 @@ func AssumeRole(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa strin
 
 func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa string, account *DynamoDbAccountConfig, renew bool, localCredentialProcessFlagV1 bool, authMethod string) (ProfileCredential, ProfileConfig) {
 	// If credentials not expired
-	if CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1 {
+	if CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1 && !renew{
 		cachedCredentials := ReturnAccountCredentials(account.Name)
 		profileCredential := ProfileCredential{
 			AccessKey:    cachedCredentials["AccessKeyId"],

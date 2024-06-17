@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-
 	"github.com/aws/aws-sdk-go-v2/config"
 	utils "github.com/lockedinspace/letme/pkg"
 	"github.com/spf13/cobra"
@@ -28,6 +27,7 @@ var obtainCmd = &cobra.Command{
 	},
 	Short: "Obtain account credentials",
 	Long: `Obtains credentials once the user authenticates itself.
+
 Credentials will last 3600 seconds by default and can be used with the argument '--profile $ACCOUNT_NAME'
 within the AWS cli binary.`,
 	Args: cobra.MinimumNArgs(1),
@@ -35,7 +35,9 @@ within the AWS cli binary.`,
 		// get flags
 		inlineTokenMfa, _ := cmd.Flags().GetString("inline-mfa")
 		renew, _ := cmd.Flags().GetBool("renew")
+
 		credentialProcess, _ := cmd.Flags().GetBool("credential-process")
+		renew, _ := cmd.Flags().GetBool("renew")
 		localCredentialProcessFlagV1, _ := cmd.Flags().GetBool("v1")
 
 		// get the current context
@@ -43,6 +45,7 @@ within the AWS cli binary.`,
 		letmeContext := utils.GetContextData(currentContext)
 		if letmeContext.AwsSessionDuration == 0 {
 			letmeContext.AwsSessionDuration = 3600
+
 		}
 
 		cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(letmeContext.AwsSourceProfile), config.WithRegion(letmeContext.AwsSourceProfileRegion))
@@ -59,6 +62,7 @@ within the AWS cli binary.`,
 		} else if !localCredentialProcessFlagV1 {
 			fmt.Println("Assuming role with the following session name: '" + letmeContext.AwsSessionName + "' and context: '" + currentContext + "'")
 		}
+
 
 		// grab the mfa arn from the config, create a new aws session and try to get credentials
 		var authMethod string
@@ -84,6 +88,7 @@ within the AWS cli binary.`,
 		utils.LoadAwsCredentials(account.Name, profileCredential)
 		utils.LoadAwsConfig(account.Name, profileConfig)
 		fmt.Println("letme: use the argument --profile '"+ account.Name +"' to interact with the account.")
+
 	},
 }
 

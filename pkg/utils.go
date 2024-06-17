@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+
 	"path/filepath"
 	"sort"
 	"text/tabwriter"
@@ -21,6 +22,7 @@ import (
 
 	"gopkg.in/ini.v1"
 )
+
 
 // Expected keys in letme-config file
 var ExpectedKeys = map[string]bool{
@@ -102,6 +104,7 @@ func CheckConfigFile(path string) bool {
 		}
 	}
 
+
 	return true
 }
 
@@ -120,6 +123,7 @@ func CheckAndReturnError(err error) {
 }
 
 // Marshalls data into a toml file (config-file)
+
 func TemplateConfigFile(stdout bool) {
 	template := ini.Empty()
 
@@ -151,6 +155,7 @@ func TemplateConfigFile(stdout bool) {
 		_, err = template.WriteTo(configFile)
 		CheckAndReturnError(err)
 	}
+
 }
 
 // Gets the user $HOME directory
@@ -160,6 +165,8 @@ func GetHomeDirectory() string {
 	return homeDir
 }
 
+
+
 // Checks if the .letme-cache file exists, this file is not supported starting from versions 0.2.0 and above
 func CacheFileExists() bool {
 	if _, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-cache"); err == nil {
@@ -168,6 +175,7 @@ func CacheFileExists() bool {
 		return false
 	}
 }
+
 
 // Marshalls data into a string used for the aws config file but with the v1 output protocol
 func AwsConfigFileCredentialsProcessV1(accountName string, region string) {
@@ -266,6 +274,7 @@ func DatabaseFile(accountName string, sessionDuration int32, v1Credentials strin
 	databaseFileWriter, err := os.OpenFile(GetHomeDirectory()+"/.letme/.letme-db", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	CheckAndReturnError(err)
 	databaseFileReader, err := os.ReadFile(GetHomeDirectory() + "/.letme/.letme-db")
+
 	CheckAndReturnError(err)
 	fi, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-db")
 	CheckAndReturnError(err)
@@ -356,6 +365,7 @@ func CheckAccountAvailability(accountName string) bool {
 func ReturnAccountCredentials(accountName string) map[string]string {
 	databaseFileReader, err := os.ReadFile(GetHomeDirectory() + "/.letme/.letme-db")
 	CheckAndReturnError(err)
+
 	var idents []Account
 	var result string
 	m := make(map[string]string)
@@ -372,6 +382,7 @@ func ReturnAccountCredentials(accountName string) map[string]string {
 		}
 	}
 	return m
+
 }
 
 // Remove an account from the database file
@@ -403,6 +414,7 @@ func RemoveAccountFromDatabaseFile(accountName string) {
 	}
 }
 
+
 func AwsCredsFileReadV2() *ini.File {
 	awsCredentialsFile, err := ini.Load(GetHomeDirectory() + "/.aws/credentials")
 	CheckAndReturnError(err)
@@ -427,6 +439,7 @@ func LoadAwsCredentials(profileName string, profileCredential ProfileCredential)
 
 	if err := credentialsFile.SaveTo(GetHomeDirectory() + "/.aws/credentials"); err != nil {
 		CheckAndReturnError(err)
+
 	}
 }
 
@@ -512,6 +525,7 @@ func GetCurrentContext() string {
 
 	return settings.ActiveContext
 }
+
 
 func GetAvalaibleContexts() []string {
 	filePath := GetHomeDirectory() + "/.letme/letme-config"
@@ -778,3 +792,4 @@ func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMf
 	}
 	return profileCredential, profileConfig
 }
+

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	utils "github.com/lockedinspace/letme/pkg"
+
 	"github.com/spf13/cobra"
 )
 
@@ -26,6 +27,7 @@ var contextCmd = &cobra.Command{
 	Short: "Configure letme options, such as context",
 	Long:  `-`,
 	Run: func(cmd *cobra.Command, args []string) {
+
 		// Get context flag value
 		context, _ := cmd.Flags().GetString("context")
 
@@ -64,3 +66,4 @@ func init() {
 	rootCmd.AddCommand(contextCmd)
 	contextCmd.Flags().String("context", "", "switch the current context")
 }
+

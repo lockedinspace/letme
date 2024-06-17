@@ -11,28 +11,41 @@ TODO:
 
 # letme [![Go Report Card](https://goreportcard.com/badge/github.com/lockedinspace/letme-go)](https://goreportcard.com/report/github.com/lockedinspace/letme-go) ![GitHub go.mod Go version of a Go module](https://img.shields.io/github/go-mod/go-version/lockedinspace/letme) [![GoDoc reference example](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/lockedinspace/letme) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
 
+A **reliable**, **secure** and **fast** way to switch between AWS accounts from the CLI.
+
 ## Requirements
-- Go (recommended 1.19 or later).
+
+- Go (recommended 1.22 or later).
 - AWS CLI (recommended v2).
-## What letme achieves
-letme was born in order to have a reliable and fast way to switch between AWS accounts from the cli, as some AWS system administrators found themselves using tools which involved in way too many variables to keep in mind in order to switch between accounts. 
 
-It also mitigates the hassle that involves using the aws assume role api, switching between chained roles, etc. Moreover, it does not tinker with the end-user machine (_using the keychain, updating environment variables, executing other programs_), instead it follows a well-known statement _"Do not break userspace"_.
+## Objectives
+`Letme` was born from the groundup with the following goals and design principles:
 
-letme reads from a common database, so no more: _"From my local computer works."_
+- **Reduce the hassle** of interacting with AWS services on **multiple accounts**.
+- **Leverage** the interaction with AWS Assume Role API.
+- **Do not tinker** with end-user machine:
+    - ~~Using the keychain~~.
+    - ~~Updating environment variables~~.
+    - ~~Executing other programs~~.
+    - ~~etc.~~
+- **No more**: _"From my local computer works."_
+- **Be compatible** with all desktop OS.
 
-It is also mantained and developed under the following statement:
+## What it is and what it's not
 
-- A simple tool which writes/updates AWS credentials under your AWS files.
+The following statement explains what this tool is:
 
-This achieves a lightweight, integrity-driven, fast and non-intrusive toolkit that only reads from a DynamoDB database, authenticates the user (_if MFA is enabled and AWS authorizes the assume role request_) and adds the successful credentials into (``$HOME/.aws/credentials`` and ``$HOME/.aws/config``).
+<p align="center"><b>
+A simple tool which writes/updates AWS credentials under your AWS files.</b>
+</p>
 
-Later on, you can append the  ``--profile example1`` to your AWS CLI operations and call resources from within example1's AWS account.
-## What it is not
-This software is not intended for:
 
-- Securing your AWS files, letme just reads and writes to them. You are responsable to prevent unauthorized access to those files.
-- Securing your AWS infrastructure (_requiring MFA in your trust relationships, using a role with fine-grained permissions, etc._)
+This software is **NOT** intended for:
+
+- Securing your AWS files, **letme just reads and writes to them**. 
+- **You are responsable** to prevent unauthorized access to those files.
+- **Securing your AWS infrastructure** (_requiring MFA in your trust relationships, using a role with fine-grained permissions, etc._)
+
 
 ## Setting up letme
 
@@ -56,11 +69,11 @@ This repository uses a ``go mod`` file, so don't git clone inside your ``$GOPATH
 letme needs a configuration file to read values from, it holds details regarding your AWS configurations.
 ```
 [general]
-  aws_source_profile = "default"
-  aws_source_profile_region = "eu-west-1"
-  dynamodb_table = "mytable"
-  mfa_arn = "arn:aws:iam::123456789012:mfa/user001"
-  session_name = "user001-with-letme"
+aws_source_profile = "default"
+aws_source_profile_region = "eu-west-1"
+dynamodb_table = "mytable"
+mfa_arn = "arn:aws:iam::123456789012:mfa/user001"
+session_name = "user001-with-letme"
 ```
 
 Run ``letme config-file`` to generate your config-file.

@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/lockedinspace/letme/pkg"
-	"github.com/lockedinspace/letme/pkg/cmd"
+	utils "github.com/lockedinspace/letme/pkg"
+	letme "github.com/lockedinspace/letme/pkg/cmd"
+
 )
 
 func main() {

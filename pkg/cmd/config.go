@@ -3,8 +3,9 @@ package letme
 import (
 	"fmt"
 	"os"
-	"github.com/lockedinspace/letme/pkg"
-	"github.com/BurntSushi/toml"
+
+	utils "github.com/lockedinspace/letme/pkg"
+
 	"github.com/spf13/cobra"
 )
 
@@ -26,55 +27,43 @@ var contextCmd = &cobra.Command{
 	Short: "Configure letme options, such as context",
 	Long:  `-`,
 	Run: func(cmd *cobra.Command, args []string) {
-			// Create a map to hold the raw TOML data
-	var rawConfig map[string]interface{}
 
-	// Decode the TOML file into the map
-	if _, err := toml.DecodeFile(utils.GetHomeDirectory() + "/.letme/letme-config", &rawConfig); err != nil {
-		utils.CheckAndReturnError(err)
-	}
+		// Get context flag value
+		context, _ := cmd.Flags().GetString("context")
 
-	// Iterate over the keys (table names) in the rawCon(fig map
-	context, _ := cmd.Flags().GetString("context")
-	if len(context) > 0 {
-		_, ok := rawConfig[context]
-		if ok {
+		contexts := utils.GetAvalaibleContexts()
+
+		switch {
+		case len(context) > 0: // Detect if prompted context exists & update it
+			contextExists := false
+			for _, section := range contexts {
+				if section == context {
+					contextExists = true
+				}
+			}
+			if !contextExists {
+				fmt.Println("letme: context '" + context + "' does not exist in your .letme-config file")
+				os.Exit(1)
+			}
 			utils.UpdateContext(context)
-		} else {
-			fmt.Println("letme: context '" + context + "' does not exist in your .letme-config file")
-			os.Exit(1)
-		}
-	} else {
-		fmt.Println("Available contexts and active context marked with *: ")
-		currentContext := utils.GetCurrentContext()
-		for tableName, _  := range rawConfig {
-			if tableName == currentContext {
-				fmt.Println("* "+tableName)
-				utils.UpdateContext(currentContext)
-			} else {
-				fmt.Println("  "+tableName)
+			fmt.Println("letme: using context '" + context + "'")
+
+		default:
+			fmt.Println("Available contexts and active context marked with *: ")
+			currentContext := utils.GetCurrentContext()
+			for _, context := range contexts {
+				if context == currentContext {
+					fmt.Println("* " + context)
+				} else {
+					fmt.Println("  " + context)
+				}
 			}
 		}
-	}
-	//currentContext := utils.GetCurrentContext()
-	// fmt.Println("Listing all contexts and marking active context with *:")
-	// for tableName, _  := range rawConfig {
-	// 	if tableName == context {
-	// 		fmt.Println("* "+tableName)
-	// 		utils.UpdateContext(context)
-	// 	} else {
-	// 		fmt.Println("  "+tableName)
-	// 	}
-	// 	// If you need to access specific fields within each table, you can assert the type
-	// 	// if table, ok := tableData.(map[string]interface{}); ok {
-	// 	// 	if dynamoDBTable, exists := table["dynamodb_table"]; exists {
-	// 	// 		fmt.Printf("  DynamoDB Table: %s\n", dynamoDBTable)
-	// 	// 	}
-	// 	// }
-	// }
 	},
 }
+
 func init() {
 	rootCmd.AddCommand(contextCmd)
 	contextCmd.Flags().String("context", "", "switch the current context")
 }
+

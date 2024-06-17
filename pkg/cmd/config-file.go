@@ -1,12 +1,12 @@
 package letme
 
 import (
-	"bufio"
 	"fmt"
-	"github.com/lockedinspace/letme/pkg"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
+
+	utils "github.com/lockedinspace/letme/pkg"
+	"github.com/spf13/cobra"
 )
 
 var configFileCmd = &cobra.Command{
@@ -26,18 +26,16 @@ and performs the operations based from the user-specified values.
 		fileName := "letme-config"
 		homeDir := utils.GetHomeDirectory()
 
-		// if verify flag is passed, verify the letme-config file
 		if verifyFlag {
-			result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
-			if result {
+			if _, err := os.Stat(homeDir + "/.letme/" + fileName); err == nil {
+				result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
+				if !result {
+					utils.TemplateConfigFile(true)
+				}
+				fmt.Println("letme: config file is valid!")
 				os.Exit(0)
 			} else {
-				fmt.Printf(
-					`
-letme: config file should have the following structure:
-%v
-`, utils.TemplateConfigFile())
-				os.Exit(1)
+				utils.CheckAndReturnError(err)
 			}
 		}
 
@@ -47,14 +45,7 @@ letme: config file should have the following structure:
 			err = os.Mkdir(homeDir+"/.letme/", 0755)
 			utils.CheckAndReturnError(err)
 
-			configFile, err := os.Create(filepath.Join(homeDir+"/.letme/", filepath.Base(fileName)))
-			utils.CheckAndReturnError(err)
-			defer configFile.Close()
-
-			writer := bufio.NewWriter(configFile)
-			_, err = fmt.Fprintf(writer, "%v", utils.TemplateConfigFile())
-			utils.CheckAndReturnError(err)
-			writer.Flush()
+			utils.TemplateConfigFile(false)
 			err = os.Chmod(filepath.Join(homeDir+"/.letme/", filepath.Base(fileName)), 0600)
 			utils.CheckAndReturnError(err)
 			fmt.Println("letme: edit the config file at " + homeDir + "/.letme/letme-config with your values.")
@@ -64,14 +55,7 @@ letme: config file should have the following structure:
 				fmt.Println("letme: to restore the letme-config file, pass the -f, --force flags or delete the letme-config file manually.")
 				os.Exit(0)
 			}
-			configFile, err := os.Create(filepath.Join(homeDir+"/.letme/", filepath.Base(fileName)))
-			utils.CheckAndReturnError(err)
-			defer configFile.Close()
-
-			writer := bufio.NewWriter(configFile)
-			_, err = fmt.Fprintf(writer, "%v", utils.TemplateConfigFile())
-			utils.CheckAndReturnError(err)
-			writer.Flush()
+			utils.TemplateConfigFile(false)
 			fmt.Println("letme: edit the config file at " + homeDir + "/.letme/letme-config with your values.")
 		}
 	},

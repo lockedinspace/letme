@@ -13,17 +13,17 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
-)
 
-// Struct which represents the config-file keys
-type GeneralParams struct {
-	Aws_source_profile        string
-	Aws_source_profile_region string `toml:"aws_source_profile_region,omitempty"`
-	Dynamodb_table            string
-	Mfa_arn                   string `toml:"mfa_arn,omitempty"`
-	Session_name              string
-	Session_duration          int64 `toml:"session_duration,omitempty"`
-}
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	dynamodbTypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+
+	"gopkg.in/ini.v1"
+)
 
 // Expected keys in letme-config file
 var ExpectedKeys = map[string]bool{
@@ -72,15 +72,6 @@ func CheckConfigFile(path string) bool {
 		}
 	}
 
-	// Check for any undecoded keys
-	undecoded := md.Undecoded()
-	if len(undecoded) > 0 {
-		fmt.Println("Undecoded keys found:")
-		for _, key := range undecoded {
-			fmt.Println(key)
-		}
-		return false
-	}
 	return true
 }
 
@@ -124,31 +115,6 @@ func GetHomeDirectory() string {
 	return homeDir
 }
 
-// Parses letme-config file and returns one field at a time
-func ConfigFileResultString(profile string, field string) interface{} {
-	var generalConfig map[string]GeneralParams
-	_, err := toml.DecodeFile(GetHomeDirectory()+"/.letme/letme-config", &generalConfig)
-	CheckAndReturnError(err)
-	switch field {
-	case "Aws_source_profile":
-		return generalConfig[profile].Aws_source_profile
-	case "Aws_source_profile_region":
-		return generalConfig[profile].Aws_source_profile_region
-	case "Mfa_arn":
-		return generalConfig[profile].Mfa_arn
-	case "Session_name":
-		return generalConfig[profile].Session_name
-	case "Dynamodb_table":
-		return generalConfig[profile].Dynamodb_table
-	case "Session_duration":
-		return generalConfig[profile].Session_duration
-	default:
-		fmt.Println("letme: error while retrieving field '" + field + "' could not be found in " + GetHomeDirectory() + "/.letme/letme-config")
-		os.Exit(1)
-	}
-	return generalConfig[profile]
-}
-
 // Checks if the .letme-cache file exists, this file is not supported starting from versions 0.2.0 and above
 func CacheFileExists() bool {
 	if _, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-cache"); err == nil {
@@ -156,37 +122,6 @@ func CacheFileExists() bool {
 	} else {
 		return false
 	}
-}
-
-// Reads the aws credentials file
-func AwsCredsFileRead() string {
-	readCacheFile, err := ioutil.ReadFile(GetHomeDirectory() + "/.aws/credentials")
-	CheckAndReturnError(err)
-	s := string(readCacheFile)
-	return s
-}
-
-// Reads the aws config file
-func AwsConfigFileRead() string {
-	readCacheFile, err := ioutil.ReadFile(GetHomeDirectory() + "/.aws/config")
-	CheckAndReturnError(err)
-	s := string(readCacheFile)
-	return s
-}
-
-// Marshalls data into a string used for the aws credentials file
-func AwsCredentialsFile(accountName string, accessKeyID string, secretAccessKey string, sessionToken string) string {
-	now := time.Now()
-	a := now.Format("Jan 2, 2006 15:04:05")
-	return fmt.Sprintf(
-		`#s-%v
-#%v;t
-[%v]
-aws_access_key_id = %v
-aws_secret_access_key = %v
-aws_session_token = %v
-#e-%v
-`, accountName, a, accountName, accessKeyID, secretAccessKey, sessionToken, accountName)
 }
 
 // Marshalls data into a string used for the aws config file but with the v1 output protocol
@@ -449,9 +384,45 @@ func RemoveAccountFromDatabaseFile(accountName string) {
 	}
 }
 
-// UserSettings represents the structure of the .letme-usersettings file.
-type UserSettings struct {
-	ActiveContext string `json:"activeContext"`
+func AwsCredsFileReadV2() *ini.File {
+	awsCredentialsFile, err := ini.Load(GetHomeDirectory() + "/.aws/credentials")
+	CheckAndReturnError(err)
+	return awsCredentialsFile
+}
+
+func AwsConfigFileReadV2() *ini.File {
+	awsCredentialsFile, err := ini.Load(GetHomeDirectory() + "/.aws/config")
+	CheckAndReturnError(err)
+	return awsCredentialsFile
+}
+
+func LoadAwsCredentials(profileName string, profileCredential ProfileCredential) {
+	credentialsFile := AwsCredsFileReadV2()
+
+	credentialsSection := credentialsFile.Section(profileName)
+	credentialsSection.Comment = "letme managed"
+
+	if err := credentialsSection.ReflectFrom(&profileCredential); err != nil {
+		CheckAndReturnError(err)
+	}
+
+	if err := credentialsFile.SaveTo(GetHomeDirectory() + "/.aws/credentials"); err != nil {
+		CheckAndReturnError(err)
+
+	}
+}
+
+func LoadAwsConfig(profileName string, profileConfig ProfileConfig) {
+	configFile := AwsConfigFileReadV2()
+
+	configSection := configFile.Section("profile " + profileName)
+	configSection.Comment = "letme managed"
+	if err := configSection.ReflectFrom(&profileConfig); err != nil {
+		CheckAndReturnError(err)
+	}
+	if err := configFile.SaveTo(GetHomeDirectory() + "/.aws/config"); err != nil {
+		CheckAndReturnError(err)
+	}
 }
 
 // Create the .letme-usersettings file which holds the current context and more
@@ -512,4 +483,270 @@ func GetCurrentContext() string {
 
 	// Return the value of the activeContext field
 	return settings.ActiveContext
+}
+
+func GetAvalaibleContexts() []string {
+	filePath := GetHomeDirectory() + "/.letme/letme-config"
+	content, err := ini.Load(filePath)
+	// content.BlockMode = false
+	if err != nil {
+		CheckAndReturnError(err)
+	}
+
+	sections := content.SectionStrings()
+	sortedSections := make([]string, 0, len(sections)-1)
+	for _, section := range sections {
+		if section == "DEFAULT" {
+			continue
+		}
+		sortedSections = append(sortedSections, section)
+	}
+	sort.Strings(sortedSections)
+	return sortedSections
+}
+
+func GetAccount(AwsDynamoDbTable string, cfg aws.Config, profileName string) *DynamoDbAccountConfig {
+	sesAwsDynamoDb := dynamodb.NewFromConfig(cfg)
+
+	account := new(DynamoDbAccountConfig)
+
+	resp, err := sesAwsDynamoDb.GetItem(context.TODO(), &dynamodb.GetItemInput{
+		TableName: aws.String(AwsDynamoDbTable),
+		Key:       map[string]dynamodbTypes.AttributeValue{"name": &dynamodbTypes.AttributeValueMemberS{Value: profileName}},
+	})
+	CheckAndReturnError(err)
+	err = attributevalue.UnmarshalMap(resp.Item, &account)
+	CheckAndReturnError(err)
+
+	return account
+}
+
+func GetSortedTable(AwsDynamoDbTable string, cfg aws.Config) {
+	sesAwsDynamoDb := dynamodb.NewFromConfig(cfg)
+	resp, err := sesAwsDynamoDb.Scan(context.TODO(), &dynamodb.ScanInput{
+		TableName: aws.String(AwsDynamoDbTable),
+	})
+	CheckAndReturnError(err)
+
+	sorted := make([]string, 0, len(resp.Items))
+	var nameLengths []int
+	var w *tabwriter.Writer
+
+	for _, item := range resp.Items {
+		var account DynamoDbAccountConfig
+		err = attributevalue.UnmarshalMap(item, &account)
+		CheckAndReturnError(err)
+		sorted = append(sorted, account.Name+"\t"+account.Region[0])
+		nameLengths = append(nameLengths, len(account.Name))
+	}
+	sort.Ints(nameLengths)
+	sort.Strings(sorted)
+	w = tabwriter.NewWriter(os.Stdout, nameLengths[len(nameLengths)-1]+5, 200, 1, ' ', 0)
+
+	fmt.Fprintln(w, "NAME:\tMAIN REGION:")
+	fmt.Fprintln(w, "-----\t------------")
+	for _, id := range sorted {
+		fmt.Fprintln(w, id)
+		w.Flush()
+	}
+}
+
+func GetContextData(context string) *LetmeContext {
+	filePath := GetHomeDirectory() + "/.letme/letme-config"
+
+	// Check if the file exists
+	if _, err := os.Stat(filePath); err != nil {
+		CheckAndReturnError(err)
+	}
+
+	config, err := ini.Load(filePath)
+	CheckAndReturnError(err)
+
+	contextSection, err := config.GetSection(context)
+	CheckAndReturnError(err)
+
+	letmeContext := new(LetmeContext)
+	if err := contextSection.MapTo(&letmeContext); err != nil {
+		CheckAndReturnError(err)
+	}
+
+	return letmeContext
+}
+
+func AssumeRole(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa string, account *DynamoDbAccountConfig, renew bool, localCredentialProcessFlagV1 bool, authMethod string) (ProfileCredential, ProfileConfig) {
+	// If credentials not expired
+	if CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1 && !renew {
+		cachedCredentials := ReturnAccountCredentials(account.Name)
+		profileCredential := ProfileCredential{
+			AccessKey:    cachedCredentials["AccessKeyId"],
+			SecretKey:    cachedCredentials["SecretAccessKey"],
+			SessionToken: cachedCredentials["SessionToken"],
+		}
+
+		profileConfig := ProfileConfig{
+			Output: "json",
+			Region: account.Region[0],
+		}
+
+		fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
+		return profileCredential, profileConfig
+	}
+
+	sesAwsSts := sts.NewFromConfig(cfg)
+	var input *sts.AssumeRoleInput
+
+	switch {
+	case len(letmeContext.AwsMfaArn) > 0 && len(inlineTokenMfa) > 0:
+		input = &sts.AssumeRoleInput{
+			RoleArn:         &account.Role[0],
+			RoleSessionName: &letmeContext.AwsSessionName,
+			SerialNumber:    &letmeContext.AwsMfaArn,
+			TokenCode:       &inlineTokenMfa,
+			DurationSeconds: &letmeContext.AwsSessionDuration,
+		}
+	case len(letmeContext.AwsMfaArn) > 0 && len(inlineTokenMfa) <= 0:
+		fmt.Printf("Enter MFA one time pass code: ")
+		var tokenMfa string
+		fmt.Scanln(&tokenMfa)
+		input = &sts.AssumeRoleInput{
+			RoleArn:         &account.Role[0],
+			RoleSessionName: &letmeContext.AwsSessionName,
+			SerialNumber:    &letmeContext.AwsMfaArn,
+			TokenCode:       &tokenMfa,
+			DurationSeconds: &letmeContext.AwsSessionDuration,
+		}
+	default:
+		input = &sts.AssumeRoleInput{
+			RoleArn:         &account.Role[0],
+			RoleSessionName: &letmeContext.AwsSessionName,
+			DurationSeconds: &letmeContext.AwsSessionDuration,
+		}
+	}
+
+	resp, err := sesAwsSts.AssumeRole(context.TODO(), input)
+	CheckAndReturnError(err)
+
+	profileCredential := ProfileCredential{
+		AccessKey:    *resp.Credentials.AccessKeyId,
+		SecretKey:    *resp.Credentials.SecretAccessKey,
+		SessionToken: *resp.Credentials.SessionToken,
+	}
+
+	profileConfig := ProfileConfig{
+		Output: "json",
+		Region: account.Region[0],
+	}
+	switch {
+	case localCredentialProcessFlagV1:
+		fmt.Printf(CredentialsProcessOutput(profileCredential.AccessKey, profileCredential.SecretKey, profileCredential.SessionToken, *resp.Credentials.Expiration))
+		os.Exit(0)
+	case renew || !CheckAccountAvailability(account.Name):
+		DatabaseFile(account.Name, letmeContext.AwsSessionDuration, CredentialsProcessOutput(profileCredential.AccessKey, profileCredential.SecretKey, profileCredential.SessionToken, *resp.Credentials.Expiration), authMethod) //only when we really authenticate against aws
+	}
+
+	return profileCredential, profileConfig
+}
+
+func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa string, account *DynamoDbAccountConfig, renew bool, localCredentialProcessFlagV1 bool, authMethod string) (ProfileCredential, ProfileConfig) {
+	// If credentials not expired
+	if CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1 && !renew {
+		cachedCredentials := ReturnAccountCredentials(account.Name)
+		profileCredential := ProfileCredential{
+			AccessKey:    cachedCredentials["AccessKeyId"],
+			SecretKey:    cachedCredentials["SecretAccessKey"],
+			SessionToken: cachedCredentials["SessionToken"],
+		}
+
+		profileConfig := ProfileConfig{
+			Output: "json",
+			Region: account.Region[0],
+		}
+
+		fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
+		return profileCredential, profileConfig
+	}
+
+	sesAwsSts := sts.NewFromConfig(cfg)
+	var input *sts.AssumeRoleInput
+	var output *sts.AssumeRoleOutput
+	var err error
+
+	fmt.Println("More than one role detected. Total hops:", len(account.Role))
+	for i := range account.Role {
+		fmt.Printf("[%v/%v]\n", i+1, len(account.Role))
+		switch {
+		// First hop with --inline-mfa flag
+		case i == 0 && len(letmeContext.AwsMfaArn) > 0 && len(inlineTokenMfa) > 0:
+			input = &sts.AssumeRoleInput{
+				RoleArn:         &account.Role[i],
+				RoleSessionName: &letmeContext.AwsSessionName,
+				SerialNumber:    &letmeContext.AwsMfaArn,
+				TokenCode:       &inlineTokenMfa,
+				DurationSeconds: &letmeContext.AwsSessionDuration,
+			}
+			output, err = sesAwsSts.AssumeRole(context.TODO(), input)
+			CheckAndReturnError(err)
+		// First hop with interactive MFA token
+		case i == 0 && len(letmeContext.AwsMfaArn) > 0 && len(inlineTokenMfa) <= 0:
+			var tokenMfa string
+			fmt.Printf("Enter MFA one time pass code: ")
+			fmt.Scanln(&tokenMfa)
+			input = &sts.AssumeRoleInput{
+				RoleArn:         &account.Role[i],
+				RoleSessionName: &letmeContext.AwsSessionName,
+				SerialNumber:    &letmeContext.AwsMfaArn,
+				TokenCode:       &tokenMfa,
+				DurationSeconds: &letmeContext.AwsSessionDuration,
+			}
+			output, err = sesAwsSts.AssumeRole(context.TODO(), input)
+			CheckAndReturnError(err)
+		// First hop without MFA
+		case i == 0:
+			input = &sts.AssumeRoleInput{
+				RoleArn:         &account.Role[i],
+				RoleSessionName: &letmeContext.AwsSessionName,
+				DurationSeconds: &letmeContext.AwsSessionDuration,
+			}
+			output, err = sesAwsSts.AssumeRole(context.TODO(), input)
+			CheckAndReturnError(err)
+		// Chained AssumneRoles with credentials from previous iterations
+		default:
+			cfg, err := config.LoadDefaultConfig(context.TODO(),
+				config.WithRegion(account.Region[0]),
+				config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
+					Value: aws.Credentials{
+						AccessKeyID: *output.Credentials.AccessKeyId, SecretAccessKey: *output.Credentials.SecretAccessKey, SessionToken: *output.Credentials.SessionToken,
+					},
+				}))
+			CheckAndReturnError(err)
+			sesChainedSts := sts.NewFromConfig(cfg)
+			input = &sts.AssumeRoleInput{
+				RoleArn:         &account.Role[i],
+				RoleSessionName: &letmeContext.AwsSessionName,
+				DurationSeconds: &letmeContext.AwsSessionDuration,
+			}
+			output, err = sesChainedSts.AssumeRole(context.TODO(), input)
+			CheckAndReturnError(err)
+		}
+	}
+
+	profileCredential := ProfileCredential{
+		AccessKey:    *output.Credentials.AccessKeyId,
+		SecretKey:    *output.Credentials.SecretAccessKey,
+		SessionToken: *output.Credentials.SessionToken,
+	}
+
+	profileConfig := ProfileConfig{
+		Output: "json",
+		Region: account.Region[0],
+	}
+
+	switch {
+	case localCredentialProcessFlagV1:
+		fmt.Printf(CredentialsProcessOutput(profileCredential.AccessKey, profileCredential.SecretKey, profileCredential.SessionToken, *output.Credentials.Expiration))
+		os.Exit(0)
+	case renew || !CheckAccountAvailability(account.Name):
+		DatabaseFile(account.Name, letmeContext.AwsSessionDuration, CredentialsProcessOutput(profileCredential.AccessKey, profileCredential.SecretKey, profileCredential.SessionToken, *output.Credentials.Expiration), authMethod) //only when we really authenticate against aws
+	}
+	return profileCredential, profileConfig
 }

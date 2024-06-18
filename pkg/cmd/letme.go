@@ -12,8 +12,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var currentVersion = "v0.2.0-rc3"
-var versionPrettyName = "Refurbished beagle"
+
+var currentVersion = "v0.2.0-rc5"
+var versionPrettyName = "New Horizons"
+
 var rootCmd = &cobra.Command{
 	Use:   "letme",
 	Short: "Obtain AWS credentials from another account",

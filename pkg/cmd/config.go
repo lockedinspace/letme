@@ -66,4 +66,3 @@ func init() {
 	rootCmd.AddCommand(contextCmd)
 	contextCmd.Flags().String("context", "", "switch the current context")
 }
-

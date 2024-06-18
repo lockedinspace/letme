@@ -34,7 +34,6 @@ var listCmd = &cobra.Command{
 
 		letmeContext := utils.GetContextData(currentContext)
 
-
 		// create a new aws session
 		cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(letmeContext.AwsSourceProfile), config.WithRegion(letmeContext.AwsSourceProfileRegion))
 		utils.CheckAndReturnError(err)

@@ -3,10 +3,10 @@ package letme
 import (
 	"context"
 	"fmt"
-	"os"
 	"github.com/aws/aws-sdk-go-v2/config"
 	utils "github.com/lockedinspace/letme/pkg"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var obtainCmd = &cobra.Command{
@@ -37,7 +37,6 @@ within the AWS cli binary.`,
 		renew, _ := cmd.Flags().GetBool("renew")
 
 		credentialProcess, _ := cmd.Flags().GetBool("credential-process")
-		renew, _ := cmd.Flags().GetBool("renew")
 		localCredentialProcessFlagV1, _ := cmd.Flags().GetBool("v1")
 
 		// get the current context
@@ -63,7 +62,6 @@ within the AWS cli binary.`,
 			fmt.Println("Assuming role with the following session name: '" + letmeContext.AwsSessionName + "' and context: '" + currentContext + "'")
 		}
 
-
 		// grab the mfa arn from the config, create a new aws session and try to get credentials
 		var authMethod string
 		if len(letmeContext.AwsMfaArn) > 0 && !localCredentialProcessFlagV1 {
@@ -87,7 +85,7 @@ within the AWS cli binary.`,
 
 		utils.LoadAwsCredentials(account.Name, profileCredential)
 		utils.LoadAwsConfig(account.Name, profileConfig)
-		fmt.Println("letme: use the argument --profile '"+ account.Name +"' to interact with the account.")
+		fmt.Println("letme: use the argument --profile '" + account.Name + "' to interact with the account.")
 
 	},
 }

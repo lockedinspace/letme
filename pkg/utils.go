@@ -23,7 +23,6 @@ import (
 	"gopkg.in/ini.v1"
 )
 
-
 // Expected keys in letme-config file
 var ExpectedKeys = map[string]bool{
 	"aws_source_profile":        true,
@@ -104,7 +103,6 @@ func CheckConfigFile(path string) bool {
 		}
 	}
 
-
 	return true
 }
 
@@ -165,8 +163,6 @@ func GetHomeDirectory() string {
 	return homeDir
 }
 
-
-
 // Checks if the .letme-cache file exists, this file is not supported starting from versions 0.2.0 and above
 func CacheFileExists() bool {
 	if _, err := os.Stat(GetHomeDirectory() + "/.letme/.letme-cache"); err == nil {
@@ -175,7 +171,6 @@ func CacheFileExists() bool {
 		return false
 	}
 }
-
 
 // Marshalls data into a string used for the aws config file but with the v1 output protocol
 func AwsConfigFileCredentialsProcessV1(accountName string, region string) {
@@ -414,7 +409,6 @@ func RemoveAccountFromDatabaseFile(accountName string) {
 	}
 }
 
-
 func AwsCredsFileReadV2() *ini.File {
 	awsCredentialsFile, err := ini.Load(GetHomeDirectory() + "/.aws/credentials")
 	CheckAndReturnError(err)
@@ -525,7 +519,6 @@ func GetCurrentContext() string {
 
 	return settings.ActiveContext
 }
-
 
 func GetAvalaibleContexts() []string {
 	filePath := GetHomeDirectory() + "/.letme/letme-config"
@@ -691,7 +684,7 @@ func AssumeRole(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa strin
 
 func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa string, account *DynamoDbAccountConfig, renew bool, localCredentialProcessFlagV1 bool, authMethod string) (ProfileCredential, ProfileConfig) {
 	// If credentials not expired
-	if CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1 && !renew{
+	if CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1 && !renew {
 		cachedCredentials := ReturnAccountCredentials(account.Name)
 		profileCredential := ProfileCredential{
 			AccessKey:    cachedCredentials["AccessKeyId"],
@@ -792,4 +785,3 @@ func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMf
 	}
 	return profileCredential, profileConfig
 }
-

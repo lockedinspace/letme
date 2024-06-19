@@ -553,7 +553,16 @@ func GetAccount(AwsDynamoDbTable string, cfg aws.Config, profileName string) *Dy
 	err = attributevalue.UnmarshalMap(resp.Item, &account)
 	CheckAndReturnError(err)
 
+	switch {
+	case len(account.Name) == 0:
+		err = fmt.Errorf("letme: Account '" + profileName + "' not found. Please verify you are using the right context by running 'letme list'.")
+		CheckAndReturnError(err)
+	case len(account.Role) == 0:
+		err = fmt.Errorf("letme: Account '" + profileName + "' found, but no role to assume. Please check DynamoDB Item.")
+		CheckAndReturnError(err)
+	}
 	return account
+
 }
 
 func GetSortedTable(AwsDynamoDbTable string, cfg aws.Config) {

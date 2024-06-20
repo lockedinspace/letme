@@ -36,16 +36,15 @@ var configure = &cobra.Command{
 				currentContext := utils.GetCurrentContext()
 				if context == currentContext {
 					fmt.Println("* " + context)
-					} else {
-						fmt.Println("  " + context)
-					}
+				} else {
+					fmt.Println("  " + context)
 				}
-				os.Exit(0)
 			}
-				
+			os.Exit(0)
+		}
+
 		context, _ := cmd.Flags().GetString("context")
 
-		
 		contextExists := false
 		for _, section := range contexts {
 			if section == context {
@@ -53,7 +52,7 @@ var configure = &cobra.Command{
 				contextExists = true
 			}
 		}
-		
+
 		switch {
 		case contextExists && len(context) != 0:
 			fmt.Println("Context  introduced exists")

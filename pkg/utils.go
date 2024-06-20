@@ -1,13 +1,18 @@
 package utils
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
+	"regexp"
 	"sort"
+	"strconv"
+	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -18,6 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	dynamodbTypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 
 	"gopkg.in/ini.v1"
 )
@@ -131,8 +137,8 @@ func TemplateConfigFile(stdout bool) {
 		AwsSourceProfileRegion: "eu-west-3",
 		AwsDynamoDbTable:       "customers",
 		AwsMfaArn:              "arn:aws:iam::4002019901:mfa/user",
-		AwsSessionName:         "user_letme",
 		AwsSessionDuration:     3600,
+		AwsSessionName:         "user_letme",
 	}
 
 	err = section.ReflectFrom(data)
@@ -151,6 +157,186 @@ func TemplateConfigFile(stdout bool) {
 		_, err = template.WriteTo(configFile)
 		CheckAndReturnError(err)
 	}
+}
+
+func mfaArnInput(awsProfile string, awsRegion string) string{
+	var mfaArn string
+	mfaArnRegex := `^arn:aws:iam::[0-9]{12}:mfa\/[\S]+$`
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(awsProfile), config.WithRegion(awsRegion))
+	CheckAndReturnError(err)
+
+	sesIam := iam.NewFromConfig(cfg)
+
+	currentUser, err := sesIam.GetUser(context.TODO(), &iam.GetUserInput{})
+	CheckAndReturnError(err)
+
+	iamResp, err := sesIam.ListMFADevices(context.TODO(), &iam.ListMFADevicesInput{
+		UserName: currentUser.User.UserName,
+	})
+	CheckAndReturnError(err)
+
+	if len(iamResp.MFADevices) == 0 {
+		fmt.Println("letme: no MFA devices configured on you user. MFA configuration ommited.")
+		return ""
+	}
+
+	var mfaDevices []string
+	for _, device := range iamResp.MFADevices {
+		mfaDevices = append(mfaDevices, *device.SerialNumber)
+	}
+
+	mfaArnExists := false
+	for {
+		fmt.Print("→ AWS MFA Device arn (optional): ")
+		fmt.Scanln(&mfaArn)
+		
+		if len(mfaArn) == 0 {
+			return ""
+		}
+
+		re := regexp.MustCompile(mfaArnRegex)
+		switch re.MatchString(mfaArn) {
+		case true: 
+			for _, arn := range mfaDevices {
+				if arn == mfaArn {
+					mfaArnExists = true
+					break
+				}
+			}
+		case false:
+			fmt.Println("letme: not a valid mfa device arn.")
+			continue
+			}	
+		if !mfaArnExists {
+			fmt.Println("letme: MFA Device not found.")
+			continue
+		}
+		break
+	}
+	return mfaArn
+}
+
+func sourceProfileRegionInput() string {
+	var awsRegion string
+	fmt.Print("→ AWS Source Profile region: ")
+	fmt.Scanln(&awsRegion)
+
+	return awsRegion
+}
+
+func sessionDurationInput() int32 {
+	var sessionDuration int32
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		fmt.Print("→ Token Session duration in seconds (optional): ")
+		input, _ := reader.ReadString('\n')
+		input = strings.TrimSpace(input)
+
+		duration, err := strconv.Atoi(input)
+		if err != nil {
+			fmt.Println("letme: expected integer not a string.")
+			continue
+		} else if duration < 900 || duration > 43200 {
+			fmt.Println("letme: token session duration cannot be lower than 15 minutes or higher than 12 hours.")
+			continue
+		} else {
+			sessionDuration = int32(duration)
+			break
+		}
+	}
+	fmt.Println(sessionDuration)
+	return sessionDuration
+}
+
+func sourceProfileInput() string {
+	config := AwsConfigFileReadV2()
+	credentials := AwsCredsFileReadV2()
+	var awsProfile string
+
+	for {
+		fmt.Print("→ AWS Source Profile Name: ")
+		fmt.Scanln(&awsProfile)
+		configProfileExists := false
+		credentialsProfileExists := false
+
+		if len(awsProfile) == 0 {
+			fmt.Println("letme: AWS Profile Name field is required. Please introduce a value.")
+			continue
+		}
+
+		if config.HasSection("profile "+awsProfile) || config.HasSection(awsProfile) {
+			configProfileExists = true
+		}
+
+		if credentials.HasSection(awsProfile) {
+			credentialsProfileExists = true
+		}
+
+		if !configProfileExists {
+			fmt.Println("letme: profile name does not exist on your .aws/config files. Please specify a valid profile.")
+			continue
+		}
+
+		if !credentialsProfileExists {
+			fmt.Println("letme: profile name does not exist on your .aws/credentials files. Please specify a valid profile.")
+			continue
+		}
+		break
+	}
+	return awsProfile
+}
+
+func dynamoDbTableInput(awsProfile string, awsRegion string) string {
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(awsProfile), config.WithRegion(awsRegion))
+	CheckAndReturnError(err)
+
+	sesAwsDynamoDb := dynamodb.NewFromConfig(cfg)
+
+	resp, err := sesAwsDynamoDb.ListTables(context.TODO(), &dynamodb.ListTablesInput{})
+	CheckAndReturnError(err)
+	var dynamoDbTableName string
+
+	for {
+		fmt.Print("→ AWS DynamoDB Table Name: ")
+		fmt.Scanln(&dynamoDbTableName)
+
+		if len(dynamoDbTableName) == 0 {
+			fmt.Println("letme: DynamoDB Table Name field is required. Please introduce a value.")
+			continue
+		}
+
+		tableExists := false
+		for _, table := range resp.TableNames {
+			if table == dynamoDbTableName {
+				tableExists = true
+			}
+		}
+
+		if !tableExists {
+			fmt.Println("letme: DynamoDB Table not found. Please introduce an existing table.")
+			continue
+		}
+
+		break
+	}
+	return dynamoDbTableName
+}
+
+func NewContext(context string) {
+	fmt.Println("letme: creating context '" + context + "'. Leave empty if you don't want to configure fields marked as optional.")
+
+	var letmeContext LetmeContext
+
+	letmeContext.AwsSourceProfile = sourceProfileInput()
+	letmeContext.AwsSourceProfileRegion = sourceProfileRegionInput()
+	letmeContext.AwsDynamoDbTable = dynamoDbTableInput(letmeContext.AwsSourceProfile, letmeContext.AwsSourceProfileRegion)
+	letmeContext.AwsSessionDuration = sessionDurationInput()
+	letmeContext.AwsMfaArn = mfaArnInput(letmeContext.AwsSourceProfile, letmeContext.AwsSourceProfileRegion)
+
+
+	fmt.Println(reflect.TypeOf(letmeContext.AwsSessionDuration))
+	fmt.Println(letmeContext)
 }
 
 // Gets the user $HOME directory

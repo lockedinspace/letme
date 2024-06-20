@@ -26,7 +26,8 @@ from another AWS account.
 			getVersions()
 			os.Exit(0)
 		}
-		fmt.Println("letme: try 'letme --help' or 'letme -h' for more information")
+		cmd.Help()
+		// fmt.Println("letme: try 'letme --help' or 'letme -h' for more information")
 		os.Exit(0)
 	},
 }

@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -204,11 +203,11 @@ func mfaArnInput(awsProfile string, awsRegion string) string{
 				}
 			}
 		case false:
-			fmt.Println("letme: not a valid mfa device arn.")
+			fmt.Println("letme: not a valid mfa device arn. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile +'"+awsProfile)
 			continue
 			}	
 		if !mfaArnExists {
-			fmt.Println("letme: MFA Device not found.")
+			fmt.Println("letme: MFA Device not found. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile '"+awsProfile)
 			continue
 		}
 		break
@@ -233,6 +232,10 @@ func sessionDurationInput() int32 {
 		input, _ := reader.ReadString('\n')
 		input = strings.TrimSpace(input)
 
+		if len(input) == 0 {
+			input = "3600"
+		}
+
 		duration, err := strconv.Atoi(input)
 		if err != nil {
 			fmt.Println("letme: expected integer not a string.")
@@ -245,8 +248,20 @@ func sessionDurationInput() int32 {
 			break
 		}
 	}
-	fmt.Println(sessionDuration)
+	// fmt.Println(sessionDuration)
 	return sessionDuration
+}
+
+func sessionNameInput() string {
+	var sessionName string
+	fmt.Print("→ Session Name (optional): ")
+	fmt.Scanln(&sessionName)
+	
+	if len(sessionName) == 0 {
+		return "letme_session"
+	}
+
+	return sessionName
 }
 
 func sourceProfileInput() string {
@@ -324,19 +339,27 @@ func dynamoDbTableInput(awsProfile string, awsRegion string) string {
 }
 
 func NewContext(context string) {
-	fmt.Println("letme: creating context '" + context + "'. Leave empty if you don't want to configure fields marked as optional.")
-
+	fmt.Println("letme: creating context '" + context + "'. Optional fields can be left empty.")
 	var letmeContext LetmeContext
 
 	letmeContext.AwsSourceProfile = sourceProfileInput()
 	letmeContext.AwsSourceProfileRegion = sourceProfileRegionInput()
 	letmeContext.AwsDynamoDbTable = dynamoDbTableInput(letmeContext.AwsSourceProfile, letmeContext.AwsSourceProfileRegion)
-	letmeContext.AwsSessionDuration = sessionDurationInput()
 	letmeContext.AwsMfaArn = mfaArnInput(letmeContext.AwsSourceProfile, letmeContext.AwsSourceProfileRegion)
+	letmeContext.AwsSessionDuration = sessionDurationInput()
+	letmeContext.AwsSessionName = sessionNameInput()
 
+	letmeConfig := LetmeConfigRead()
 
-	fmt.Println(reflect.TypeOf(letmeContext.AwsSessionDuration))
-	fmt.Println(letmeContext)
+	section := letmeConfig.Section(context)
+
+	if err := section.ReflectFrom(&letmeContext); err != nil {
+		CheckAndReturnError(err)
+	}
+	if len(letmeContext.AwsMfaArn) == 0 {
+		section.DeleteKey("mfa_arn")
+	}
+	letmeConfig.SaveTo(GetHomeDirectory() + "/.letme/letme-config")
 }
 
 // Gets the user $HOME directory
@@ -599,6 +622,42 @@ func AwsConfigFileReadV2() *ini.File {
 	awsCredentialsFile, err := ini.Load(GetHomeDirectory() + "/.aws/config")
 	CheckAndReturnError(err)
 	return awsCredentialsFile
+}
+
+
+func LetmeConfigCreate() {
+	filePath := GetHomeDirectory() + "/.letme/letme-config"
+	_, err := os.Stat(filePath)
+
+	if os.IsNotExist(err) {
+		fmt.Println("here")
+		letmeConfigFileCreate, err := os.Create(filePath)
+		CheckAndReturnError(err)
+		defer letmeConfigFileCreate.Close()
+	} else {
+		CheckAndReturnError(err)
+	}
+}
+
+func LetmeConfigRead() *ini.File {
+
+	filePath := GetHomeDirectory() + "/.letme/letme-config"
+	_, err := os.Stat(filePath)
+
+	if os.IsNotExist(err) {
+		letmeConfigFileCreate, err := os.Create(filePath)
+		CheckAndReturnError(err)
+		defer letmeConfigFileCreate.Close()
+	}
+
+	if err != nil && !os.IsNotExist(err) {
+		CheckAndReturnError(err)
+	}
+
+	letmeConfigFile, err := ini.Load(filePath)
+	CheckAndReturnError(err)
+
+	return letmeConfigFile
 }
 
 func LoadAwsCredentials(profileName string, profileCredential ProfileCredential) {

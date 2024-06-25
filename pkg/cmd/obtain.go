@@ -3,11 +3,11 @@ package letme
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/aws/aws-sdk-go-v2/config"
 	utils "github.com/lockedinspace/letme/pkg"
 	"github.com/spf13/cobra"
-	"os"
-	"os"
 )
 
 var obtainCmd = &cobra.Command{
@@ -28,7 +28,6 @@ var obtainCmd = &cobra.Command{
 	},
 	Short: "Obtain account credentials",
 	Long: `Obtains credentials once the user authenticates itself.
-
 Credentials will last 3600 seconds by default and can be used with the argument '--profile $ACCOUNT_NAME'
 within the AWS cli binary.`,
 	Args: cobra.MinimumNArgs(1),
@@ -36,7 +35,6 @@ within the AWS cli binary.`,
 		// get flags
 		inlineTokenMfa, _ := cmd.Flags().GetString("inline-mfa")
 		renew, _ := cmd.Flags().GetBool("renew")
-
 		credentialProcess, _ := cmd.Flags().GetBool("credential-process")
 		localCredentialProcessFlagV1, _ := cmd.Flags().GetBool("v1")
 
@@ -45,7 +43,6 @@ within the AWS cli binary.`,
 		letmeContext := utils.GetContextData(currentContext)
 		if letmeContext.AwsSessionDuration == 0 {
 			letmeContext.AwsSessionDuration = 3600
-
 		}
 
 		cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(letmeContext.AwsSourceProfile), config.WithRegion(letmeContext.AwsSourceProfileRegion))
@@ -56,19 +53,18 @@ within the AWS cli binary.`,
 		}
 
 		// overwrite the session name variable if the user provides it
-		if len(sessionName) == 0 && !localCredentialProcessFlagV1 {
-			fmt.Println("Using default session name: '" + args[0] + "-letme-session' with context: '" + context + "'")
-			sessionName = args[0] + "-letme-session"
+		if len(letmeContext.AwsSessionName) == 0 && !localCredentialProcessFlagV1 {
+			fmt.Println("Using default session name: '" + args[0] + "-letme-session' with context: '" + currentContext + "'")
+			letmeContext.AwsSessionName = args[0] + "-letme-session"
 		} else if !localCredentialProcessFlagV1 {
-			fmt.Println("Assuming role with the following session name: '" + sessionName + "' and context: '" + context + "'")
+			fmt.Println("Assuming role with the following session name: '" + letmeContext.AwsSessionName + "' and context: '" + currentContext + "'")
 		}
 
 		// grab the mfa arn from the config, create a new aws session and try to get credentials
-		serialMfa := utils.ConfigFileResultString(context, "Mfa_arn").(string)
 		var authMethod string
-		if len(serialMfa) > 0 && !localCredentialProcessFlagV1 {
+		if len(letmeContext.AwsMfaArn) > 0 && !localCredentialProcessFlagV1 {
 			authMethod = "mfa"
-		} else if len(serialMfa) > 0 && localCredentialProcessFlagV1 {
+		} else if len(letmeContext.AwsMfaArn) > 0 && localCredentialProcessFlagV1 {
 			authMethod = "mfa-credential-process-v1"
 		} else if localCredentialProcessFlagV1 {
 			authMethod = "credential-process-v1"
@@ -88,9 +84,6 @@ within the AWS cli binary.`,
 		utils.LoadAwsCredentials(account.Name, profileCredential)
 		utils.LoadAwsConfig(account.Name, profileConfig)
 		fmt.Println("letme: use the argument --profile '" + account.Name + "' to interact with the account.")
-
-		fmt.Println("letme: use the argument --profile '" + account.Name + "' to interact with the account.")
-
 	},
 }
 

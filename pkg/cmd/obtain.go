@@ -7,6 +7,7 @@ import (
 	utils "github.com/lockedinspace/letme/pkg"
 	"github.com/spf13/cobra"
 	"os"
+	"os"
 )
 
 var obtainCmd = &cobra.Command{
@@ -55,18 +56,19 @@ within the AWS cli binary.`,
 		}
 
 		// overwrite the session name variable if the user provides it
-		if len(letmeContext.AwsSessionName) == 0 && !localCredentialProcessFlagV1 {
-			fmt.Println("Using default session name: '" + args[0] + "-letme-session' with context: '" + currentContext + "'")
-			letmeContext.AwsSessionName = args[0] + "-letme-session"
+		if len(sessionName) == 0 && !localCredentialProcessFlagV1 {
+			fmt.Println("Using default session name: '" + args[0] + "-letme-session' with context: '" + context + "'")
+			sessionName = args[0] + "-letme-session"
 		} else if !localCredentialProcessFlagV1 {
-			fmt.Println("Assuming role with the following session name: '" + letmeContext.AwsSessionName + "' and context: '" + currentContext + "'")
+			fmt.Println("Assuming role with the following session name: '" + sessionName + "' and context: '" + context + "'")
 		}
 
 		// grab the mfa arn from the config, create a new aws session and try to get credentials
+		serialMfa := utils.ConfigFileResultString(context, "Mfa_arn").(string)
 		var authMethod string
-		if len(letmeContext.AwsMfaArn) > 0 && !localCredentialProcessFlagV1 {
+		if len(serialMfa) > 0 && !localCredentialProcessFlagV1 {
 			authMethod = "mfa"
-		} else if len(letmeContext.AwsMfaArn) > 0 && localCredentialProcessFlagV1 {
+		} else if len(serialMfa) > 0 && localCredentialProcessFlagV1 {
 			authMethod = "mfa-credential-process-v1"
 		} else if localCredentialProcessFlagV1 {
 			authMethod = "credential-process-v1"
@@ -85,6 +87,8 @@ within the AWS cli binary.`,
 
 		utils.LoadAwsCredentials(account.Name, profileCredential)
 		utils.LoadAwsConfig(account.Name, profileConfig)
+		fmt.Println("letme: use the argument --profile '" + account.Name + "' to interact with the account.")
+
 		fmt.Println("letme: use the argument --profile '" + account.Name + "' to interact with the account.")
 
 	},

@@ -30,6 +30,7 @@ var listCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// get the current context
 
+
 		currentContext := utils.GetCurrentContext()
 
 		letmeContext := utils.GetContextData(currentContext)

@@ -26,7 +26,6 @@ var ConfigureCmd = &cobra.Command{
 		// Get context flag value
 		if list, _ := cmd.Flags().GetBool("template"); list {
 			utils.TemplateConfigFile(true)
-			os.Exit(0)
 		}
 
 		

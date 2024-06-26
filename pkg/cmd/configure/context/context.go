@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 )
-
+var listContexts bool
 var ContextCmd = &cobra.Command{
 	Use: "context",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -16,14 +16,18 @@ var ContextCmd = &cobra.Command{
 			fmt.Println("letme: run 'letme config-file --verify' to obtain a template for your config file.")
 			os.Exit(1)
 		}
+		if cmd.Flags().NFlag() == 0 { 
+			cmd.Usage()
+		}
 	},
 	Short: "Manage contexts",
+	//Args: cobra.MinimumNFlags(1),
 	Long:  `Manage contexts inside your letme-config file`,
 	Run: func(cmd *cobra.Command, args []string) {
 		contexts := utils.GetAvalaibleContexts()
 
 		// if no flags passed, list contexts
-		if cmd.Flags().NFlag() == 0 {
+		if listContexts {
 			fmt.Println("Active context marked with '*': ")
 			for _, context := range contexts {
 				currentContext := utils.GetCurrentContext()
@@ -55,4 +59,6 @@ var ContextCmd = &cobra.Command{
 func init() {
 	ContextCmd.Flags().StringP("switch", "s", "", "switch to the specified context")
 	ContextCmd.Flags().StringP("create", "c", "", "create the specified context")
+	ContextCmd.Flags().BoolVarP(&listContexts, "list", "l", false, "list all contexts")
+
 }

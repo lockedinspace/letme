@@ -21,8 +21,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	dynamodbTypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 
 	"gopkg.in/ini.v1"
 )
@@ -128,7 +128,7 @@ func CheckAndReturnError(err error) {
 func TemplateConfigFile(stdout bool) {
 	template := ini.Empty()
 
-	section, err := template.NewSection("default")
+	section, err := template.NewSection("contextName")
 	CheckAndReturnError(err)
 
 	data := &LetmeContext{
@@ -158,7 +158,7 @@ func TemplateConfigFile(stdout bool) {
 	}
 }
 
-func mfaArnInput(awsProfile string, awsRegion string) string {
+func mfaArnInput(awsProfile string, awsRegion string) string{
 	var mfaArn string
 	mfaArnRegex := `^arn:aws:iam::[0-9]{12}:mfa\/[\S]+$`
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(awsProfile), config.WithRegion(awsRegion))
@@ -188,14 +188,14 @@ func mfaArnInput(awsProfile string, awsRegion string) string {
 	for {
 		fmt.Print("→ AWS MFA Device arn (optional): ")
 		fmt.Scanln(&mfaArn)
-
+		
 		if len(mfaArn) == 0 {
 			return ""
 		}
 
 		re := regexp.MustCompile(mfaArnRegex)
 		switch re.MatchString(mfaArn) {
-		case true:
+		case true: 
 			for _, arn := range mfaDevices {
 				if arn == mfaArn {
 					mfaArnExists = true
@@ -203,11 +203,11 @@ func mfaArnInput(awsProfile string, awsRegion string) string {
 				}
 			}
 		case false:
-			fmt.Println("letme: not a valid mfa device arn. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile +'" + awsProfile)
+			fmt.Println("letme: not a valid mfa device arn. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile +'"+awsProfile)
 			continue
-		}
+			}	
 		if !mfaArnExists {
-			fmt.Println("letme: MFA Device not found. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile '" + awsProfile)
+			fmt.Println("letme: MFA Device not found. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile '"+awsProfile)
 			continue
 		}
 		break
@@ -256,7 +256,7 @@ func sessionNameInput() string {
 	var sessionName string
 	fmt.Print("→ Session Name (optional): ")
 	fmt.Scanln(&sessionName)
-
+	
 	if len(sessionName) == 0 {
 		return "letme_session"
 	}
@@ -623,6 +623,7 @@ func AwsConfigFileReadV2() *ini.File {
 	CheckAndReturnError(err)
 	return awsCredentialsFile
 }
+
 
 func LetmeConfigCreate() {
 	filePath := GetHomeDirectory() + "/.letme/letme-config"

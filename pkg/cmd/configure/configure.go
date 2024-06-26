@@ -1,15 +1,15 @@
-package letme
+package configure
 
 import (
 	"fmt"
-	"os"
-
 	utils "github.com/lockedinspace/letme/pkg"
+	"github.com/lockedinspace/letme/pkg/cmd"
+	"github.com/lockedinspace/letme/pkg/cmd/configure/context"
 	"github.com/spf13/cobra"
-	// "golang.org/x/text/cases"
+	"os"
 )
 
-var configure = &cobra.Command{
+var ConfigureCmd = &cobra.Command{
 	Use: "configure",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		utils.LetmeConfigCreate()
@@ -71,19 +71,20 @@ var configure = &cobra.Command{
 		switch {
 		case contextExists && !renew:
 			utils.UpdateContext(context)
-			fmt.Println("letme: switched to letme '"+context+"' context.")
+			fmt.Println("letme: DSswitched to letme '" + context + "' context.")
 		case !contextExists || renew:
 			utils.NewContext(context)
-			fmt.Println("letme: created letme '"+context+"' context.")	
+			fmt.Println("letme: created letme '" + context + "' context.")
 		}
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(configure)
-	configure.Flags().StringP("context", "c", "general", "switch to the specified context or creates it")
-	configure.Flags().BoolP("list", "l", false, "list active and current context")
-	configure.Flags().Bool("renew", false, "edits an existing context if exists")
-	configure.Flags().Bool("template", false, "shows a letme-config context example")
-	configure.Flags().Bool("validate-config", false, "validate config file structure and integrity")
+	letme.RootCmd.AddCommand(ConfigureCmd)
+	ConfigureCmd.AddCommand(context.ContextCmd)
+	ConfigureCmd.Flags().StringP("context", "c", "general", "switch to the specified context or creates it")
+	ConfigureCmd.Flags().BoolP("list", "l", false, "list active and current context")
+	ConfigureCmd.Flags().Bool("renew", false, "edits an existing context if exists")
+	ConfigureCmd.Flags().Bool("template", false, "shows a letme-config context example")
+	ConfigureCmd.Flags().Bool("validate-config", false, "validate config file structure and integrity")
 }

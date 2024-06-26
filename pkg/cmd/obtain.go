@@ -91,7 +91,7 @@ func init() {
 	var credentialProcess bool
 	var v1 bool
 	var renew bool
-	rootCmd.AddCommand(obtainCmd)
+	RootCmd.AddCommand(obtainCmd)
 	obtainCmd.Flags().String("inline-mfa", "", "pass the mfa token without user prompt")
 	obtainCmd.Flags().BoolVarP(&renew, "renew", "", false, "force new credentials to be assumed")
 	obtainCmd.Flags().BoolVarP(&credentialProcess, "credential-process", "", false, "obtain credentials using the credential_process entry in your aws config file.")

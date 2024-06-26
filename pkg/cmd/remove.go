@@ -67,5 +67,5 @@ and '$HOME/.aws/config' files.
 }
 
 func init() {
-	rootCmd.AddCommand(removeCmd)
+	RootCmd.AddCommand(removeCmd)
 }

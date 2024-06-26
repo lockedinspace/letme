@@ -4,6 +4,8 @@ import (
 	"fmt"
 	utils "github.com/lockedinspace/letme/pkg"
 	letme "github.com/lockedinspace/letme/pkg/cmd"
+	_ "github.com/lockedinspace/letme/pkg/cmd/configure"
+	_ "github.com/lockedinspace/letme/pkg/cmd/configure/context"
 )
 
 func main() {

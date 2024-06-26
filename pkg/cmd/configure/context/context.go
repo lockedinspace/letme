@@ -17,7 +17,7 @@ var ContextCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
-	Short: "Manage contexts.",
+	Short: "Manage contexts",
 	Long:  `Manage contexts inside your letme-config file`,
 	Run: func(cmd *cobra.Command, args []string) {
 		contexts := utils.GetAvalaibleContexts()

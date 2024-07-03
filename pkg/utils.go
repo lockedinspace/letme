@@ -217,9 +217,8 @@ func mfaArnInput(awsProfile string, awsRegion string) string{
 
 func sourceProfileRegionInput() string {
 	var awsRegion string
-	fmt.Print("→ AWS Source Profile region: ")
+	fmt.Print("→ AWS Source Profile Region: ")
 	fmt.Scanln(&awsRegion)
-
 	return awsRegion
 }
 
@@ -228,7 +227,7 @@ func sessionDurationInput() int32 {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		fmt.Print("→ Token Session duration in seconds (optional): ")
+		fmt.Print("→ Token Session Duration in seconds (optional): ")
 		input, _ := reader.ReadString('\n')
 		input = strings.TrimSpace(input)
 
@@ -238,7 +237,7 @@ func sessionDurationInput() int32 {
 
 		duration, err := strconv.Atoi(input)
 		if err != nil {
-			fmt.Println("letme: expected integer not a string.")
+			fmt.Println("letme: expected integer not string.")
 			continue
 		} else if duration < 900 || duration > 43200 {
 			fmt.Println("letme: token session duration cannot be lower than 15 minutes or higher than 12 hours.")

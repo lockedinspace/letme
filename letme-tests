@@ -37,6 +37,7 @@ go run main.go ob $1 > /dev/null && aws sts get-caller-identity --profile $1 > /
 if [[ $? == 0 ]]; then
     echo -e "${GREEN}SUCCEED${NC}"
 else
+
     echo -e "${RED}FAILURE${NC}"
     exit 1
 fi
@@ -51,7 +52,9 @@ fi
 go run main.go ob $1 > /dev/null  && aws sts get-caller-identity --profile $1 > /dev/null
 if [[ $? == 0 ]]; then
     echo -e "${GREEN}SUCCEED${NC}"
+
 else
+
     echo -e "${RED}FAILURE${NC}"
     exit 1
 fi
@@ -67,7 +70,9 @@ fi
 go run main.go ob $1 --inline-mfa $inlinemfa > /dev/null && aws sts get-caller-identity --profile $1 > /dev/null
 if [[ $? == 0 ]]; then
     echo -e "${GREEN}SUCCEED${NC}"
+
 else
+
     echo -e "${RED}FAILURE${NC}"
     exit 1
 fi
@@ -82,7 +87,9 @@ fi
 go run main.go ob $2 > /dev/null && aws sts get-caller-identity --profile $2 > /dev/null
 if [[ $? == 0 ]]; then
     echo -e "${GREEN}SUCCEED${NC}"
+
 else
+
     echo -en "${RED}FAILURE${NC}"
     exit 1
 fi
@@ -97,7 +104,9 @@ fi
 go run main.go ob $2 > /dev/null && aws sts get-caller-identity --profile $2 > /dev/null
 if [[ $? == 0 ]]; then
     echo -e "${GREEN}SUCCEED${NC}"
+
 else
+
     echo -e "${RED}FAILURE${NC}"
     exit 1
 fi
@@ -113,7 +122,9 @@ fi
 go run main.go ob $2 --inline-mfa $inlinemfa > /dev/null && aws sts get-caller-identity --profile $2 > /dev/null
 if [[ $? == 0 ]]; then
     echo -e "${GREEN}SUCCEED${NC}"
+
 else
+
     echo -e "${RED}FAILURE${NC}"
     exit 1
 fi
@@ -128,7 +139,9 @@ fi
 go run main.go ob $1 --credential-process > /dev/null && aws sts get-caller-identity --profile $1 > /dev/null
 if [[ $? == 0 ]]; then
     echo -e "${GREEN}SUCCEED${NC}"
+
 else
+
     echo -en "${RED}FAILURE${NC}"
     exit 1
 fi
@@ -141,13 +154,18 @@ fi
 #     :
 # fi
 # go run main.go ob $1 --credential-process  && aws sts get-caller-identity --profile $1
+# go run main.go ob $1 --credential-process  && aws sts get-caller-identity --profile $1
 # if [[ $? == 0 ]]; then
 #     echo -e "${GREEN}SUCCEED${NC}"
+
 # else
+
 #     echo -e "${RED}FAILURE${NC}"
 #     exit 1
 # fi
 
+# # Test 9
+# echo -n "Test 9/12: Single account, with inline MFA (please input token) and credential-process: "
 # # Test 9
 # echo -n "Test 9/12: Single account, with inline MFA (please input token) and credential-process: "
 # read inlinemfa
@@ -157,13 +175,18 @@ fi
 #     :
 # fi
 # go run main.go ob $1 --credential-process --inline-mfa $inlinemfa > /dev/null && aws sts get-caller-identity --profile $1 > /dev/null
+# go run main.go ob $1 --credential-process --inline-mfa $inlinemfa > /dev/null && aws sts get-caller-identity --profile $1 > /dev/null
 # if [[ $? == 0 ]]; then
 #     echo -e "${GREEN}SUCCEED${NC}"
+
 # else
+
 #     echo -e "${RED}FAILURE${NC}"
 #     exit 1
 # fi
 
+# # Test 10
+# echo  "Test 10/12: Multi account, no MFA with credential-process"
 # # Test 10
 # echo  "Test 10/12: Multi account, no MFA with credential-process"
 # if !(cat $HOME/.letme/letme-config | grep "#mfa_arn" >/dev/null); then
@@ -172,13 +195,18 @@ fi
 #     :
 # fi
 # go run main.go ob $2 --credential-process > /dev/null && aws sts get-caller-identity --profile $2 > /dev/null
+# go run main.go ob $2 --credential-process > /dev/null && aws sts get-caller-identity --profile $2 > /dev/null
 # if [[ $? == 0 ]]; then
 #     echo -e "${GREEN}SUCCEED${NC}"
+
 # else
+
 #     echo -en "${RED}FAILURE${NC}"
 #     exit 1
 # fi
 
+# # Test 11
+# echo -n "Test 11/12: Multi account, with MFA (please input token) and credential-process: "
 # # Test 11
 # echo -n "Test 11/12: Multi account, with MFA (please input token) and credential-process: "
 # if cat $HOME/.letme/letme-config | grep "#mfa_arn" >/dev/null; then
@@ -187,13 +215,18 @@ fi
 #     :
 # fi
 # go run main.go ob $2 --credential-process > /dev/null && aws sts get-caller-identity --profile $2 > /dev/null
+# go run main.go ob $2 --credential-process > /dev/null && aws sts get-caller-identity --profile $2 > /dev/null
 # if [[ $? == 0 ]]; then
 #     echo -e "${GREEN}SUCCEED${NC}"
+
 # else
+
 #     echo -e "${RED}FAILURE${NC}"
 #     exit 1
 # fi
 
+# # Test 12
+# echo -n "Test 12/12: Multi account, with inline MFA (please input token) and credential-process: "
 # # Test 12
 # echo -n "Test 12/12: Multi account, with inline MFA (please input token) and credential-process: "
 # read inlinemfa
@@ -203,9 +236,12 @@ fi
 #     :
 # fi
 # go run main.go ob $2 --credential-process --inline-mfa $inlinemfa > /dev/null && aws sts get-caller-identity --profile $2 > /dev/null
+# go run main.go ob $2 --credential-process --inline-mfa $inlinemfa > /dev/null && aws sts get-caller-identity --profile $2 > /dev/null
 # if [[ $? == 0 ]]; then
 #     echo -e "${GREEN}SUCCEED${NC}"
+
 # else
 #     echo -e "${RED}FAILURE${NC}"
 #     exit 1
 # fi
+

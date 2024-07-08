@@ -27,6 +27,7 @@ and '$HOME/.aws/config' files.
 		// open both files and check if there's any error opening them, if not, delete entries based on what's existing
 		_, errCred := os.OpenFile(utils.GetHomeDirectory()+"/.aws/credentials", os.O_RDWR|os.O_APPEND, 0600)
 		_, errConf := os.OpenFile(utils.GetHomeDirectory()+"/.aws/config", os.O_RDWR|os.O_APPEND, 0600)
+
 		if !(errors.Is(errCred, os.ErrNotExist)) && !(errors.Is(errConf, os.ErrNotExist)) {
 			accountInFile := utils.CheckAccountLocally(args[0])
 			switch {
@@ -65,5 +66,5 @@ and '$HOME/.aws/config' files.
 }
 
 func init() {
-	rootCmd.AddCommand(removeCmd)
+	RootCmd.AddCommand(removeCmd)
 }

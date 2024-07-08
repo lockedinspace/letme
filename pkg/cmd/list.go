@@ -29,6 +29,7 @@ var listCmd = &cobra.Command{
 	Long:  `Lists all the AWS accounts and their main region.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// get the current context
+
 		currentContext := utils.GetCurrentContext()
 
 		letmeContext := utils.GetContextData(currentContext)
@@ -37,11 +38,10 @@ var listCmd = &cobra.Command{
 		cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(letmeContext.AwsSourceProfile), config.WithRegion(letmeContext.AwsSourceProfileRegion))
 		utils.CheckAndReturnError(err)
 		fmt.Println("Listing accounts using '" + currentContext + "' context:\n")
-
 		utils.GetSortedTable(letmeContext.AwsDynamoDbTable, cfg)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(listCmd)
+	RootCmd.AddCommand(listCmd)
 }

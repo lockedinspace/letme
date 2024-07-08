@@ -12,9 +12,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var currentVersion = "v0.2.0-rc4"
+var currentVersion = "v0.2.0-rc6"
 var versionPrettyName = "New Horizons"
-var rootCmd = &cobra.Command{
+var RootCmd = &cobra.Command{
 	Use:   "letme",
 	Short: "Obtain AWS credentials from another account",
 	Long: `letme automates the process of authenticating and obtaining credentials
@@ -57,11 +57,11 @@ func getVersions() string {
 }
 func init() {
 	var Version bool
-	rootCmd.PersistentFlags().BoolVarP(&Version, "version", "v", false, "list current version for letme")
+	RootCmd.PersistentFlags().BoolVarP(&Version, "version", "v", false, "list current version for letme")
 }
 
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }

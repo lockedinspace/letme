@@ -48,6 +48,21 @@ within the AWS cli binary.`,
 		cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(letmeContext.AwsSourceProfile), config.WithRegion(letmeContext.AwsSourceProfileRegion))
 		utils.CheckAndReturnError(err)
 		account := utils.GetAccount(letmeContext.AwsDynamoDbTable, cfg, args[0])
+		
+		switch {
+		case len(account.Name) == 0:
+			fmt.Println("letme: the specified profile does not exist on your DynamoDB.")
+			fmt.Println("letme: please run 'letme list' to get available profiles.")
+			os.Exit(1)
+		case len(account.Region) == 0:
+			fmt.Println("letme: default region not set. Setting 'us-east-1' by default.")
+			account.Region[0] = "us-east-1"
+		case len(account.Role) == 0:
+			fmt.Println("letme: the specified profile does not have any role configured.")
+			fmt.Println("letme: nothing to do.")
+			os.Exit(1)
+		}
+
 		if credentialProcess {
 			utils.AwsConfigFileCredentialsProcessV1(args[0], account.Region[0])
 		}
@@ -91,7 +106,7 @@ func init() {
 	var credentialProcess bool
 	var v1 bool
 	var renew bool
-	rootCmd.AddCommand(obtainCmd)
+	RootCmd.AddCommand(obtainCmd)
 	obtainCmd.Flags().String("inline-mfa", "", "pass the mfa token without user prompt")
 	obtainCmd.Flags().BoolVarP(&renew, "renew", "", false, "force new credentials to be assumed")
 	obtainCmd.Flags().BoolVarP(&credentialProcess, "credential-process", "", false, "obtain credentials using the credential_process entry in your aws config file.")

@@ -61,6 +61,7 @@ and '$HOME/.aws/config' files.
 				os.Exit(1)
 			}
 			utils.RemoveAccountFromDatabaseFile(args[0])
+
 		}
 	},
 }

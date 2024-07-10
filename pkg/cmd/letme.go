@@ -16,8 +16,8 @@ var currentVersion = "v0.2.0"
 var versionPrettyName = "New Horizons"
 var RootCmd = &cobra.Command{
 	Use:   "letme",
-	Short: "Obtain AWS credentials from another account",
-	Long: `letme automates the process of authenticating and obtaining credentials
+	Short: "A reliable, secure and fast way to switch between AWS accounts from the CLI.",
+	Long: `Automate the process of authenticating and obtaining credentials
 from another AWS account.
 	`,
 	Run: func(cmd *cobra.Command, args []string) {

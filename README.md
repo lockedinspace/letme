@@ -1,27 +1,10 @@
-Known issues:
-- --credentials-process with mfa enabled fails if mfa code is not provided through argument --inline-mfa
-TODO:
-- (letme-tests) fix credentials-process requesting credentials even if time specified in session_duration hasnt been completed
-- fix letme list not displaying more than 25 clients
-- letme list now must read from json database file
-- remove client from .letme-db file when letme remove client is issued
-- remove code referencing old cache mechanism  e.g. `type CacheFields struct`
-- deleted various external libraries which will make letme smaller in total size
-- remove old cache functions and methods (letme init)
-Known issues:
-- --credentials-process with mfa enabled fails if mfa code is not provided through argument --inline-mfa
-TODO:
-- (letme-tests) fix credentials-process requesting credentials even if time specified in session_duration hasnt been completed
-- fix letme list not displaying more than 25 clients
-- letme list now must read from json database file
-- remove client from .letme-db file when letme remove client is issued
-- remove code referencing old cache mechanism  e.g. `type CacheFields struct`
-- deleted various external libraries which will make letme smaller in total size
-- remove old cache functions and methods (letme init)
-
 # letme [![Go Report Card](https://goreportcard.com/badge/github.com/lockedinspace/letme-go)](https://goreportcard.com/report/github.com/lockedinspace/letme-go) ![GitHub go.mod Go version of a Go module](https://img.shields.io/github/go-mod/go-version/lockedinspace/letme) [![GoDoc reference example](https://img.shields.io/badge/godoc-reference-blue.svg)](https://pkg.go.dev/github.com/lockedinspace/letme) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
 
 A **reliable**, **secure** and **fast** way to switch between AWS accounts from the CLI.
+
+### ! Visit our official documentation page to get the most up to date documentation:
+
+https://lockedinspace.com/letme/index.html
 
 ## Requirements
 

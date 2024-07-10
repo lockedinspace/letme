@@ -48,7 +48,7 @@ within the AWS cli binary.`,
 		cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(letmeContext.AwsSourceProfile), config.WithRegion(letmeContext.AwsSourceProfileRegion))
 		utils.CheckAndReturnError(err)
 		account := utils.GetAccount(letmeContext.AwsDynamoDbTable, cfg, args[0])
-		
+
 		switch {
 		case len(account.Name) == 0:
 			fmt.Println("letme: the specified account does not exist in your DynamoDB.")

@@ -35,7 +35,7 @@ and '$HOME/.aws/config' files.
 				credentialSection, err := credentials.GetSection(args[0])
 				utils.CheckAndReturnError(err)
 				if credentialSection.Comment != "; letme managed" {
-					err := fmt.Errorf("Account " + args[0] + " is not managed by letme, so it won't be deleted")
+					err := fmt.Errorf("letme: account " + args[0] + " is not managed by letme, cannot be deleted.")
 					utils.CheckAndReturnError(err)
 				}
 				credentials.DeleteSection(args[0])
@@ -48,7 +48,7 @@ and '$HOME/.aws/config' files.
 				configSection, err := config.GetSection("profile " + args[0])
 				utils.CheckAndReturnError(err)
 				if configSection.Comment != "; letme managed" {
-					err := fmt.Errorf("Account " + args[0] + " is not managed by letme, so it won't be deleted")
+					err := fmt.Errorf("letme: account " + args[0] + " is not managed by letme, cannot be deleted.")
 					utils.CheckAndReturnError(err)
 				}
 				config.DeleteSection("profile " + args[0])
@@ -57,7 +57,7 @@ and '$HOME/.aws/config' files.
 				}
 				fmt.Println("letme: removed profile '" + args[0] + "' entry from config file.")
 			default:
-				fmt.Println("letme: unable to remove profile '" + args[0] + "', not found on your local aws files")
+				fmt.Println("letme: unable to remove profile '" + args[0] + "', not found on your local aws files.")
 				os.Exit(1)
 			}
 			utils.RemoveAccountFromDatabaseFile(args[0])

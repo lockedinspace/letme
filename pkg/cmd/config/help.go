@@ -21,8 +21,8 @@ var ConfigCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
-	Short: "Interact with letme-config file and manage contexts.",
-	Long:  `Interact with letme-config file and manage contexts.`,
+	Short: "Configure letme.",
+	Long:  `Manage contexts and more.`,
 	// Args: cobra.MinimumNFlags(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()

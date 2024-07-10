@@ -45,9 +45,9 @@ func getVersions() string {
 		v2, err := version.NewVersion(*latestTag.Name)
 		utils.CheckAndReturnError(err)
 		if v1.LessThan(v2) {
-			fmt.Printf("\n%s is not longer the latest version. Please consider updating to: %s\n", v1, v2)
+			fmt.Printf("\n%s is not longer the latest version. Consider updating to: %s\n", v1, v2)
 		} else {
-			fmt.Println("\nYou are using the latest version available.")
+			fmt.Println("\nUsing the latest version available.")
 		}
 	} else {
 		fmt.Printf("No tags yet\n")

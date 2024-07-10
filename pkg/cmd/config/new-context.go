@@ -19,7 +19,7 @@ var NewContext = &cobra.Command{
 		}
 	},
 	Short: "Create a new context.",
-	Long:  `Interactively creates a new context configuration on your letme-config file.`,
+	Long:  `Interactively creates a new context in your letme-config file.`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		contexts := utils.GetAvalaibleContexts()

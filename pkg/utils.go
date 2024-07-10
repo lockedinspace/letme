@@ -101,7 +101,7 @@ func CheckConfigFile(path string) bool {
 
 		for _, key := range section.KeyStrings() {
 			if !ExpectedKeys[key] {
-				fmt.Printf("Error: Invalid key '%s' in table '%s'. Config file should have the following structure:\n", key, section.Name())
+				fmt.Printf("letme: invalid key '%s' in table '%s'. Config file should have the following structure:\n", key, section.Name())
 				return false
 			}
 		}
@@ -175,7 +175,7 @@ func mfaArnInput(awsProfile string, awsRegion string) string{
 	CheckAndReturnError(err)
 
 	if len(iamResp.MFADevices) == 0 {
-		fmt.Println("letme: no MFA devices configured on you user. MFA configuration ommited.")
+		fmt.Println("letme: no MFA devices configured.")
 		return ""
 	}
 
@@ -203,7 +203,7 @@ func mfaArnInput(awsProfile string, awsRegion string) string{
 				}
 			}
 		case false:
-			fmt.Println("letme: not a valid mfa device arn. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile +'"+awsProfile)
+			fmt.Println("letme: not a valid MFA device arn. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile +'"+awsProfile)
 			continue
 			}	
 		if !mfaArnExists {
@@ -275,7 +275,7 @@ func sourceProfileInput() string {
 		credentialsProfileExists := false
 
 		if len(awsProfile) == 0 {
-			fmt.Println("letme: AWS Profile Name field is required. Please introduce a value.")
+			fmt.Println("letme: AWS Profile Name field is required ")
 			continue
 		}
 
@@ -288,12 +288,12 @@ func sourceProfileInput() string {
 		}
 
 		if !configProfileExists {
-			fmt.Println("letme: profile name does not exist in your .aws/credentials .aws/config files. Specify a valid profile.")
+			fmt.Println("letme: profile name does not exist in your AWS config file. Specify a valid profile.")
 			continue
 		}
 
 		if !credentialsProfileExists {
-			fmt.Println("letme: profile name does not exist on your .aws/credentials files. Please specify a valid profile.")
+			fmt.Println("letme: profile name does not exist in your AWS credentials file. Sspecify a valid profile.")
 			continue
 		}
 		break
@@ -316,7 +316,7 @@ func dynamoDbTableInput(awsProfile string, awsRegion string) string {
 		fmt.Scanln(&dynamoDbTableName)
 
 		if len(dynamoDbTableName) == 0 {
-			fmt.Println("letme: DynamoDB Table Name field is required. Please introduce a value.")
+			fmt.Println("letme: DynamoDB Table Name field is required.")
 			continue
 		}
 
@@ -328,7 +328,7 @@ func dynamoDbTableInput(awsProfile string, awsRegion string) string {
 		}
 
 		if !tableExists {
-			fmt.Println("letme: DynamoDB Table not found. Please introduce an existing table.")
+			fmt.Println("letme: DynamoDB Table not found.")
 			continue
 		}
 
@@ -338,7 +338,7 @@ func dynamoDbTableInput(awsProfile string, awsRegion string) string {
 }
 
 func NewContext(context string) {
-	fmt.Println("letme: creating context '" + context + "'. Optional fields can be left empty.")
+	fmt.Println("letme: creating/updating context '" + context + "'. Optional fields can be left empty.")
 	var letmeContext LetmeContext
 
 	letmeContext.AwsSourceProfile = sourceProfileInput()
@@ -409,6 +409,7 @@ func AwsConfigFileCredentialsProcessV1(accountName string, region string) {
 	}
 
 	fmt.Println("letme: configured credential proces V1 for account " + accountName)
+	fmt.Println("letme: use the argument '--profile " + accountName + "' to interact with the account.")
 	os.Exit(0)
 }
 
@@ -847,7 +848,7 @@ func GetContextData(context string) *LetmeContext {
 
 func AssumeRole(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa string, account *DynamoDbAccountConfig, renew bool, localCredentialProcessFlagV1 bool, authMethod string) (ProfileCredential, ProfileConfig) {
 	// If credentials not expired
-	if CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1 {
+	if CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1 &&  !renew{
 		cachedCredentials := ReturnAccountCredentials(account.Name)
 		profileCredential := ProfileCredential{
 			AccessKey:    cachedCredentials["AccessKeyId"],
@@ -860,7 +861,7 @@ func AssumeRole(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa strin
 			Region: account.Region[0],
 		}
 
-		fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
+		fmt.Println("letme: using cached credentials. Append argument '--renew' to obtain new credentials.")
 		return profileCredential, profileConfig
 	}
 
@@ -934,7 +935,7 @@ func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMf
 			Region: account.Region[0],
 		}
 
-		fmt.Println("letme: using cached credentials. Use argument --renew to obtain new credentials.")
+		fmt.Println("letme: using cached credentials. Append argument '--renew' to obtain new credentials.")
 		return profileCredential, profileConfig
 	}
 

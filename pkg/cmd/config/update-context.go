@@ -18,8 +18,8 @@ var UpdateContext = &cobra.Command{
 			os.Exit(1)
 		}
 	},
-	Short: "Updates an existing context.",
-	Long:  `Interactively update an existing context configuration on your letme-config file.`,
+	Short: "Change context values.",
+	Long:  `Interactively update an existing context.`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		contexts := utils.GetAvalaibleContexts()
@@ -28,7 +28,7 @@ var UpdateContext = &cobra.Command{
 		for _, section := range contexts {
 			if section == letmeContext {
 				utils.NewContext(letmeContext)
-				fmt.Println("letme: updated letme '" + letmeContext + "' context.")
+				fmt.Println("letme: updated '" + letmeContext + "' context.")
 				os.Exit(0)
 			}
 		}

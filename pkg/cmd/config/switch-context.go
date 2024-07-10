@@ -18,8 +18,8 @@ var SwitchContext = &cobra.Command{
 			os.Exit(1)
 		}
 	},
-	Short: "Change letme active context.",
-	Long:  `Change letme active context.`,
+	Short: "Switch to a context.",
+	Long:  `If the context exists, switch to the specified context.`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		contexts := utils.GetAvalaibleContexts()

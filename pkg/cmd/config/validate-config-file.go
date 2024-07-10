@@ -18,8 +18,8 @@ var Validate = &cobra.Command{
 			os.Exit(1)
 		}
 	},
-	Short: "Validate config file structure and integrity ",
-	Long:  `Validate config file structure and integrity of your letme-config file.`,
+	Short: "Validate the config file.",
+	Long:  `Validate the config file structure and integrity.`,
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		homeDir := utils.GetHomeDirectory()
@@ -29,7 +29,7 @@ var Validate = &cobra.Command{
 			if !result {
 				utils.TemplateConfigFile(true)
 			}
-			fmt.Println("letme: config file is valid!")
+			fmt.Println("letme: config file valid.")
 			os.Exit(0)
 		} else {
 			utils.CheckAndReturnError(err)

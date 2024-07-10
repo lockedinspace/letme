@@ -51,15 +51,14 @@ within the AWS cli binary.`,
 		
 		switch {
 		case len(account.Name) == 0:
-			fmt.Println("letme: the specified profile does not exist on your DynamoDB.")
-			fmt.Println("letme: please run 'letme list' to get available profiles.")
+			fmt.Println("letme: the specified account does not exist in your DynamoDB.")
+			fmt.Println("letme: run 'letme list' to list available accounts.")
 			os.Exit(1)
 		case len(account.Region) == 0:
 			fmt.Println("letme: default region not set. Setting 'us-east-1' by default.")
 			account.Region[0] = "us-east-1"
 		case len(account.Role) == 0:
-			fmt.Println("letme: the specified profile does not have any role configured.")
-			fmt.Println("letme: nothing to do.")
+			fmt.Println("letme: the specified account does not have any role configured. Nothing to assume.")
 			os.Exit(1)
 		}
 
@@ -98,7 +97,7 @@ within the AWS cli binary.`,
 
 		utils.LoadAwsCredentials(account.Name, profileCredential)
 		utils.LoadAwsConfig(account.Name, profileConfig)
-		fmt.Println("letme: use the argument --profile '" + account.Name + "' to interact with the account.")
+		fmt.Println("letme: use the argument '--profile " + account.Name + "' to interact with the account.")
 	},
 }
 

@@ -18,8 +18,8 @@ var ViewTemplate = &cobra.Command{
 			os.Exit(1)
 		}
 	},
-	Short: "Validate config file structure and integrity ",
-	Long:  `validate config file structure and integrity of your letme-config file.`,
+	Short: "View the a sample configuration file template",
+	Long:  `View the a sample configuration file template, use that as an scaffolding for your needs.`,
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		utils.TemplateConfigFile(true)

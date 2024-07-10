@@ -28,7 +28,7 @@ var SwitchContext = &cobra.Command{
 		for _, section := range contexts {
 			if section == letmeContext {
 				utils.UpdateContext(letmeContext)
-				fmt.Println("letme: switched to letme '" + letmeContext + "' context.")
+				fmt.Println("Using: '" + letmeContext + "' context.")
 				os.Exit(0)
 			}
 		}

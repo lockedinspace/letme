@@ -27,12 +27,12 @@ var NewContext = &cobra.Command{
 
 		for _, section := range contexts {
 			if section == letmeContext {
-				fmt.Println("letme: context '" + letmeContext + "' already exists. To modify it run 'letme update-context " + letmeContext + "'.")
+				fmt.Println("letme: context '" + letmeContext + "' already exists. Modify it with 'letme update-context " + letmeContext + "'.")
 				os.Exit(1)
 			}
 		}
 		utils.NewContext(letmeContext)
-		fmt.Println("letme: created letme '" + letmeContext + "' context.")
+		fmt.Println("Created letme '" + letmeContext + "' context.")
 		os.Exit(0)
 	},
 }

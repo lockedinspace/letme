@@ -35,6 +35,7 @@ var ExpectedKeys = map[string]bool{
 	"mfa_arn":                   true,
 	"session_name":              true,
 	"session_duration":          true,
+	"tags": true,
 }
 
 // Mandatory keys in letme-config file

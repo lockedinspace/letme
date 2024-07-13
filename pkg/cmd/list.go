@@ -33,24 +33,27 @@ var listCmd = &cobra.Command{
 		letmeContext := utils.GetContextData(currentContext)
 		filterTags, err := cmd.Flags().GetStringArray("filter")
 		utils.CheckAndReturnError(err)
+		output, err := cmd.Flags().GetString("output")
+		utils.CheckAndReturnError(err)
+
 
 		if len(filterTags) != 0 {
 			letmeContext.Tags = filterTags
 		}
 
-		fmt.Println(letmeContext.Tags)
-		os.Exit(0)
+		// fmt.Println(letmeContext.Tags)
+		// os.Exit(0)
 
 		// create a new aws session
 		cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(letmeContext.AwsSourceProfile), config.WithRegion(letmeContext.AwsSourceProfileRegion))
 		utils.CheckAndReturnError(err)
-		fmt.Println("Listing accounts using '" + currentContext + "' context:\n")
 		tableData := utils.GetTableData(letmeContext.AwsDynamoDbTable, letmeContext.Tags, cfg)
 
-		switch {
-		case text:
+		switch output{
+		case "text":
+			fmt.Println("Listing accounts using '" + currentContext + "' context:\n")
 			utils.ListTextOutput(tableData)
-		case json:
+		case "json":
 			utils.ListJsonOutput(tableData)
 		}
 	},

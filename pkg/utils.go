@@ -65,6 +65,15 @@ type DynamoDbAccountConfig struct {
 	Tags   []string `dynamodbav:"tags"`
 }
 
+type AccountItem struct {
+	Name   string `json:"name"`
+	Region string `json:"region"`
+}
+
+type AccountItems struct {
+	Items []AccountItem `json:"items"`
+}
+
 type ProfileConfig struct {
 	Output string `ini:"output"`
 	Region string `ini:"region"`
@@ -795,8 +804,9 @@ func GetAccount(awsDynamoDbTable string, cfg aws.Config, profileName string) *Dy
 	return account
 }
 
-func GetTableData(awsDynamoDbTable string, tags []string, cfg aws.Config) (resp dynamodb.ScanOutput) {
+func GetTableData(awsDynamoDbTable string, tags []string, cfg aws.Config) (resp []DynamoDbAccountConfig) {
 	sesAwsDynamoDb := dynamodb.NewFromConfig(cfg)
+	var accountList []DynamoDbAccountConfig
 
 	switch {
 	case len(tags) > 0:
@@ -811,7 +821,7 @@ func GetTableData(awsDynamoDbTable string, tags []string, cfg aws.Config) (resp 
 	
 		filterExpression := strings.Join(filter, " AND ")
 		
-		fmt.Println(expressionAttributeValues, filterExpression)
+		// fmt.Println(expressionAttributeValues, filterExpression)
 		
 		resp, err := sesAwsDynamoDb.Scan(context.TODO(), &dynamodb.ScanInput{
 			TableName: aws.String(awsDynamoDbTable),
@@ -822,36 +832,67 @@ func GetTableData(awsDynamoDbTable string, tags []string, cfg aws.Config) (resp 
 			FilterExpression: aws.String(filterExpression),
 		})
 		CheckAndReturnError(err)
-		return *resp
+		for _, item := range resp.Items {
+			var account DynamoDbAccountConfig
+			err = attributevalue.UnmarshalMap(item, &account)
+			CheckAndReturnError(err)
+			accountList = append(accountList, account)
+		}	
 	default:
 		resp, err := sesAwsDynamoDb.Scan(context.TODO(), &dynamodb.ScanInput{
 			TableName: aws.String(awsDynamoDbTable),
 		})
 		CheckAndReturnError(err)
-		return *resp
+		
+		for _, item := range resp.Items {
+			var account DynamoDbAccountConfig
+			err = attributevalue.UnmarshalMap(item, &account)
+			CheckAndReturnError(err)
+			accountList = append(accountList, account)
+		}
 	}
+
+	return accountList
+}
+
+func ListTextOutput(accountList []DynamoDbAccountConfig) {
+	sorted := make([]string, 0, len(accountList))
+	var nameLengths []int
+	var w *tabwriter.Writer
+
+	for _, account := range accountList {
+		sorted = append(sorted, account.Name+"\t"+account.Region[0])
+		nameLengths = append(nameLengths, len(account.Name))
+	}
+	sort.Ints(nameLengths)
+	sort.Strings(sorted)
+	w = tabwriter.NewWriter(os.Stdout, nameLengths[len(nameLengths)-1]+5, 200, 1, ' ', 0)
+
+	fmt.Fprintln(w, "NAME:\tMAIN REGION:")
+	fmt.Fprintln(w, "-----\t------------")
+	for _, id := range sorted {
+		fmt.Fprintln(w, id)
+		w.Flush()
+	}
+}
+
+func ListJsonOutput(accountList []DynamoDbAccountConfig) {
+	// sorted := make([]string, 0, len(accountList))
+	var accountItems AccountItems
+
+
+	for _, account := range accountList {
+		accountItems.Items = append(accountItems.Items, AccountItem{Name: account.Name, Region: account.Region[0]})
+		// sorted = append(sorted, account.Name+"\t"+account.Region[0])
+	}
+
+	sort.Slice(accountItems.Items, func(i, j int) bool {
+		return accountItems.Items[i].Name < accountItems.Items[j].Name
+	})
 	
-	// sorted := make([]string, 0, len(resp.Items))
-	// var nameLengths []int
-	// var w *tabwriter.Writer
-
-	// for _, item := range resp.Items {
-	// 	var account DynamoDbAccountConfig
-	// 	err = attributevalue.UnmarshalMap(item, &account)
-	// 	CheckAndReturnError(err)
-	// 	sorted = append(sorted, account.Name+"\t"+account.Region[0])
-	// 	nameLengths = append(nameLengths, len(account.Name))
-	// }
-	// sort.Ints(nameLengths)
-	// sort.Strings(sorted)
-	// w = tabwriter.NewWriter(os.Stdout, nameLengths[len(nameLengths)-1]+5, 200, 1, ' ', 0)
-
-	// fmt.Fprintln(w, "NAME:\tMAIN REGION:")
-	// fmt.Fprintln(w, "-----\t------------")
-	// for _, id := range sorted {
-	// 	fmt.Fprintln(w, id)
-	// 	w.Flush()
-	// }
+  jsonData, err := json.MarshalIndent(accountItems, "", " ")
+	CheckAndReturnError(err)
+	fmt.Println(string(jsonData))
 }
 
 func GetContextData(context string) *LetmeContext {

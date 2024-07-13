@@ -14,7 +14,7 @@ As current AWS administrators, we've found that:
 1. **It wasn't easy to manage** credentials from multiple accounts and **follow AWS best practices** at the same time.
 2. Every team had a different tool to do the same task, we wanted a centralized way to manage credentials.
 
-3. **No more**: _"On my local computer works."_
+3. _"On my local computer works."_
 
 ## Requirements
 

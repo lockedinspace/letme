@@ -49,18 +49,20 @@ type Context struct {
 }
 
 type LetmeContext struct {
-	AwsSourceProfile       string `ini:"aws_source_profile"`
-	AwsSourceProfileRegion string `ini:"aws_source_profile_region"`
-	AwsDynamoDbTable       string `ini:"dynamodb_table"`
-	AwsMfaArn              string `ini:"mfa_arn"`
-	AwsSessionName         string `ini:"session_name"`
-	AwsSessionDuration     int32  `ini:"session_duration"`
+	AwsSourceProfile       string   `ini:"aws_source_profile"`
+	AwsSourceProfileRegion string   `ini:"aws_source_profile_region"`
+	AwsDynamoDbTable       string   `ini:"dynamodb_table"`
+	AwsMfaArn              string   `ini:"mfa_arn"`
+	AwsSessionName         string   `ini:"session_name"`
+	AwsSessionDuration     int32    `ini:"session_duration"`
+	Tags                   []string `ini:"tags"`
 }
 
 type DynamoDbAccountConfig struct {
 	Name   string   `dynamodbav:"name"`
 	Region []string `dynamodbav:"region"`
 	Role   []string `dynamodbav:"role"`
+	Tags   []string `dynamodbav:"tags"`
 }
 
 type ProfileConfig struct {
@@ -777,13 +779,13 @@ func GetAvalaibleContexts() []string {
 	return sortedSections
 }
 
-func GetAccount(AwsDynamoDbTable string, cfg aws.Config, profileName string) *DynamoDbAccountConfig {
+func GetAccount(awsDynamoDbTable string, cfg aws.Config, profileName string) *DynamoDbAccountConfig {
 	sesAwsDynamoDb := dynamodb.NewFromConfig(cfg)
 
 	account := new(DynamoDbAccountConfig)
 
 	resp, err := sesAwsDynamoDb.GetItem(context.TODO(), &dynamodb.GetItemInput{
-		TableName: aws.String(AwsDynamoDbTable),
+		TableName: aws.String(awsDynamoDbTable),
 		Key:       map[string]dynamodbTypes.AttributeValue{"name": &dynamodbTypes.AttributeValueMemberS{Value: profileName}},
 	})
 	CheckAndReturnError(err)
@@ -793,34 +795,63 @@ func GetAccount(AwsDynamoDbTable string, cfg aws.Config, profileName string) *Dy
 	return account
 }
 
-func GetSortedTable(AwsDynamoDbTable string, cfg aws.Config) {
+func GetTableData(awsDynamoDbTable string, tags []string, cfg aws.Config) (resp dynamodb.ScanOutput) {
 	sesAwsDynamoDb := dynamodb.NewFromConfig(cfg)
-	resp, err := sesAwsDynamoDb.Scan(context.TODO(), &dynamodb.ScanInput{
-		TableName: aws.String(AwsDynamoDbTable),
-	})
-	CheckAndReturnError(err)
 
-	sorted := make([]string, 0, len(resp.Items))
-	var nameLengths []int
-	var w *tabwriter.Writer
-
-	for _, item := range resp.Items {
-		var account DynamoDbAccountConfig
-		err = attributevalue.UnmarshalMap(item, &account)
+	switch {
+	case len(tags) > 0:
+		var filter []string
+		expressionAttributeValues := make(map[string]dynamodbTypes.AttributeValue, len(tags))
+		
+		for _, tag := range tags {
+			expressionAttributeValues[":"+tag] = &dynamodbTypes.AttributeValueMemberS{Value: tag}
+			expression := fmt.Sprintf("contains(#tags, :%s)", tag)
+			filter = append(filter, expression)
+		}
+	
+		filterExpression := strings.Join(filter, " AND ")
+		
+		fmt.Println(expressionAttributeValues, filterExpression)
+		
+		resp, err := sesAwsDynamoDb.Scan(context.TODO(), &dynamodb.ScanInput{
+			TableName: aws.String(awsDynamoDbTable),
+			ExpressionAttributeNames: map[string]string{
+				"#tags": "tags",
+			},
+			ExpressionAttributeValues: expressionAttributeValues,
+			FilterExpression: aws.String(filterExpression),
+		})
 		CheckAndReturnError(err)
-		sorted = append(sorted, account.Name+"\t"+account.Region[0])
-		nameLengths = append(nameLengths, len(account.Name))
+		return *resp
+	default:
+		resp, err := sesAwsDynamoDb.Scan(context.TODO(), &dynamodb.ScanInput{
+			TableName: aws.String(awsDynamoDbTable),
+		})
+		CheckAndReturnError(err)
+		return *resp
 	}
-	sort.Ints(nameLengths)
-	sort.Strings(sorted)
-	w = tabwriter.NewWriter(os.Stdout, nameLengths[len(nameLengths)-1]+5, 200, 1, ' ', 0)
+	
+	// sorted := make([]string, 0, len(resp.Items))
+	// var nameLengths []int
+	// var w *tabwriter.Writer
 
-	fmt.Fprintln(w, "NAME:\tMAIN REGION:")
-	fmt.Fprintln(w, "-----\t------------")
-	for _, id := range sorted {
-		fmt.Fprintln(w, id)
-		w.Flush()
-	}
+	// for _, item := range resp.Items {
+	// 	var account DynamoDbAccountConfig
+	// 	err = attributevalue.UnmarshalMap(item, &account)
+	// 	CheckAndReturnError(err)
+	// 	sorted = append(sorted, account.Name+"\t"+account.Region[0])
+	// 	nameLengths = append(nameLengths, len(account.Name))
+	// }
+	// sort.Ints(nameLengths)
+	// sort.Strings(sorted)
+	// w = tabwriter.NewWriter(os.Stdout, nameLengths[len(nameLengths)-1]+5, 200, 1, ' ', 0)
+
+	// fmt.Fprintln(w, "NAME:\tMAIN REGION:")
+	// fmt.Fprintln(w, "-----\t------------")
+	// for _, id := range sorted {
+	// 	fmt.Fprintln(w, id)
+	// 	w.Flush()
+	// }
 }
 
 func GetContextData(context string) *LetmeContext {

@@ -29,19 +29,35 @@ var listCmd = &cobra.Command{
 	Long:  `Lists all the AWS accounts and their main region.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// get the current context
-
 		currentContext := utils.GetCurrentContext()
-
 		letmeContext := utils.GetContextData(currentContext)
+		filterTags, err := cmd.Flags().GetStringArray("filter")
+		utils.CheckAndReturnError(err)
+
+		if len(filterTags) != 0 {
+			letmeContext.Tags = filterTags
+		}
+
+		fmt.Println(letmeContext.Tags)
+		os.Exit(0)
 
 		// create a new aws session
 		cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(letmeContext.AwsSourceProfile), config.WithRegion(letmeContext.AwsSourceProfileRegion))
 		utils.CheckAndReturnError(err)
 		fmt.Println("Listing accounts using '" + currentContext + "' context:\n")
-		utils.GetSortedTable(letmeContext.AwsDynamoDbTable, cfg)
+		tableData := utils.GetTableData(letmeContext.AwsDynamoDbTable, letmeContext.Tags, cfg)
+
+		switch {
+		case text:
+			utils.ListTextOutput(tableData)
+		case json:
+			utils.ListJsonOutput(tableData)
+		}
 	},
 }
 
 func init() {
 	RootCmd.AddCommand(listCmd)
+	listCmd.Flags().StringArray("filter", []string{}, "a comma delimited list to filter output based on tags")
+	listCmd.Flags().StringP("output", "o", "text", "formatting style")
 }

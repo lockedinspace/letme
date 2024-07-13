@@ -35,7 +35,7 @@ var ExpectedKeys = map[string]bool{
 	"mfa_arn":                   true,
 	"session_name":              true,
 	"session_duration":          true,
-	"tags": true,
+	"tags":                      true,
 }
 
 // Mandatory keys in letme-config file
@@ -349,6 +349,20 @@ func dynamoDbTableInput(awsProfile string, awsRegion string) string {
 	return dynamoDbTableName
 }
 
+func letmeTagsInput() []string {
+	var tagInput string
+	fmt.Print("→ Tags (optional): ")
+	fmt.Scanln(&tagInput)
+
+	if len(tagInput) == 0 {
+		return []string{}
+	}
+
+	tags := strings.Split(tagInput, ",")
+
+	return tags
+}
+
 func NewContext(context string) {
 	fmt.Println("letme: creating/updating context '" + context + "'. Optional fields can be left empty.")
 	var letmeContext LetmeContext
@@ -359,6 +373,7 @@ func NewContext(context string) {
 	letmeContext.AwsMfaArn = mfaArnInput(letmeContext.AwsSourceProfile, letmeContext.AwsSourceProfileRegion)
 	letmeContext.AwsSessionDuration = sessionDurationInput()
 	letmeContext.AwsSessionName = sessionNameInput()
+	letmeContext.Tags = letmeTagsInput()
 
 	letmeConfig := LetmeConfigRead()
 
@@ -367,8 +382,13 @@ func NewContext(context string) {
 	if err := section.ReflectFrom(&letmeContext); err != nil {
 		CheckAndReturnError(err)
 	}
+
 	if len(letmeContext.AwsMfaArn) == 0 {
 		section.DeleteKey("mfa_arn")
+	}
+
+	if len(letmeContext.Tags) == 0 {
+		section.DeleteKey("tags")
 	}
 	letmeConfig.SaveTo(GetHomeDirectory() + "/.letme/letme-config")
 }
@@ -813,24 +833,24 @@ func GetTableData(awsDynamoDbTable string, tags []string, cfg aws.Config) (resp 
 	case len(tags) > 0:
 		var filter []string
 		expressionAttributeValues := make(map[string]dynamodbTypes.AttributeValue, len(tags))
-		
+
 		for _, tag := range tags {
 			expressionAttributeValues[":"+tag] = &dynamodbTypes.AttributeValueMemberS{Value: tag}
 			expression := fmt.Sprintf("contains(#tags, :%s)", tag)
 			filter = append(filter, expression)
 		}
-	
+
 		filterExpression := strings.Join(filter, " AND ")
-		
+
 		// fmt.Println(expressionAttributeValues, filterExpression)
-		
+
 		resp, err := sesAwsDynamoDb.Scan(context.TODO(), &dynamodb.ScanInput{
 			TableName: aws.String(awsDynamoDbTable),
 			ExpressionAttributeNames: map[string]string{
 				"#tags": "tags",
 			},
 			ExpressionAttributeValues: expressionAttributeValues,
-			FilterExpression: aws.String(filterExpression),
+			FilterExpression:          aws.String(filterExpression),
 		})
 		CheckAndReturnError(err)
 		for _, item := range resp.Items {
@@ -838,13 +858,13 @@ func GetTableData(awsDynamoDbTable string, tags []string, cfg aws.Config) (resp 
 			err = attributevalue.UnmarshalMap(item, &account)
 			CheckAndReturnError(err)
 			accountList = append(accountList, account)
-		}	
+		}
 	default:
 		resp, err := sesAwsDynamoDb.Scan(context.TODO(), &dynamodb.ScanInput{
 			TableName: aws.String(awsDynamoDbTable),
 		})
 		CheckAndReturnError(err)
-		
+
 		for _, item := range resp.Items {
 			var account DynamoDbAccountConfig
 			err = attributevalue.UnmarshalMap(item, &account)
@@ -881,7 +901,6 @@ func ListJsonOutput(accountList []DynamoDbAccountConfig) {
 	// sorted := make([]string, 0, len(accountList))
 	var accountItems AccountItems
 
-
 	for _, account := range accountList {
 		accountItems.Items = append(accountItems.Items, AccountItem{Name: account.Name, Region: account.Region[0]})
 		// sorted = append(sorted, account.Name+"\t"+account.Region[0])
@@ -890,8 +909,8 @@ func ListJsonOutput(accountList []DynamoDbAccountConfig) {
 	sort.Slice(accountItems.Items, func(i, j int) bool {
 		return accountItems.Items[i].Name < accountItems.Items[j].Name
 	})
-	
-  jsonData, err := json.MarshalIndent(accountItems, "", " ")
+
+	jsonData, err := json.MarshalIndent(accountItems, "", " ")
 	CheckAndReturnError(err)
 	fmt.Println(string(jsonData))
 }

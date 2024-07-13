@@ -36,7 +36,6 @@ var listCmd = &cobra.Command{
 		output, err := cmd.Flags().GetString("output")
 		utils.CheckAndReturnError(err)
 
-
 		if len(filterTags) != 0 {
 			letmeContext.Tags = filterTags
 		}
@@ -49,7 +48,12 @@ var listCmd = &cobra.Command{
 		utils.CheckAndReturnError(err)
 		tableData := utils.GetTableData(letmeContext.AwsDynamoDbTable, letmeContext.Tags, cfg)
 
-		switch output{
+		if len(tableData) == 0 {
+			fmt.Println("letme: no items found that matched your filters on DynamoDB Table '"+ letmeContext.AwsDynamoDbTable+"'.")
+			os.Exit(1)
+		}
+
+		switch output {
 		case "text":
 			fmt.Println("Listing accounts using '" + currentContext + "' context:\n")
 			utils.ListTextOutput(tableData)

@@ -26,8 +26,8 @@ var obtainCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
-	Short: "Obtain account credentials",
-	Long: `Obtains credentials once the user authenticates itself.
+	Short: "Obtain account credentials.",
+	Long: `Obtain AWS STS assumed credentials once the user authenticates itself.
 Credentials will last 3600 seconds by default and can be used with the argument '--profile $ACCOUNT_NAME'
 within the AWS cli binary.`,
 	Args: cobra.MinimumNArgs(1),

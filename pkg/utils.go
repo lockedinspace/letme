@@ -215,11 +215,11 @@ func mfaArnInput(awsProfile string, awsRegion string) string {
 				}
 			}
 		case false:
-			fmt.Println("letme: not a valid MFA device arn. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile +'" + awsProfile)
+			fmt.Println("letme: not a valid MFA device arn. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile " + awsProfile)
 			continue
 		}
 		if !mfaArnExists {
-			fmt.Println("letme: MFA Device not found. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile '" + awsProfile)
+			fmt.Println("letme: MFA Device not found. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile " + awsProfile)
 			continue
 		}
 		break
@@ -440,7 +440,7 @@ func AwsConfigFileCredentialsProcessV1(accountName string, region string) {
 		CheckAndReturnError(err)
 	}
 
-	fmt.Println("letme: configured credential proces V1 for account " + accountName)
+	fmt.Println("letme: configured credential process V1 for account " + accountName)
 	fmt.Println("letme: use the argument '--profile " + accountName + "' to interact with the account.")
 	os.Exit(0)
 }

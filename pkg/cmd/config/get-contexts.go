@@ -18,7 +18,7 @@ var GetContexts = &cobra.Command{
 			os.Exit(1)
 		}
 	},
-	Short: "Get active and avalaible contexts.",
+	Short: "Get active and available contexts.",
 	Long:  `List all configured contexts in your letme-config file marking the active context with '*'`,
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {

@@ -25,8 +25,8 @@ var listCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
-	Short: "List accounts",
-	Long:  `Lists all the AWS accounts and their main region.`,
+	Short: "List accounts.",
+	Long:  `List all the AWS accounts and their main region.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// get the current context
 		currentContext := utils.GetCurrentContext()
@@ -49,7 +49,7 @@ var listCmd = &cobra.Command{
 		tableData := utils.GetTableData(letmeContext.AwsDynamoDbTable, letmeContext.Tags, cfg)
 
 		if len(tableData) == 0 {
-			fmt.Println("letme: no items found that matched your filters on DynamoDB Table '"+ letmeContext.AwsDynamoDbTable+"'.")
+			fmt.Println("letme: no items found that matched your filters on DynamoDB Table '" + letmeContext.AwsDynamoDbTable + "'.")
 			os.Exit(1)
 		}
 

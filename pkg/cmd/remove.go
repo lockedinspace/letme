@@ -11,8 +11,8 @@ import (
 
 var removeCmd = &cobra.Command{
 	Use:   "remove",
-	Short: "Remove a profile from your local AWS files",
-	Long: `Removes the account entry on both of your AWS files.
+	Short: "Remove the account entry in your AWS files.",
+	Long: `Remove the account entry in your AWS files.
 This will not remove anything on the DynamoDB side. Use it for
 cleanup purposes and sanitizing your '$HOME/.aws/credentials'
 and '$HOME/.aws/config' files.

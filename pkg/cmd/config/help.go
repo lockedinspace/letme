@@ -22,7 +22,7 @@ var ConfigCmd = &cobra.Command{
 		}
 	},
 	Short: "Configure letme.",
-	Long:  `Manage contexts and more.`,
+	Long:  `Personalize your letme experience, manage contexts and more.`,
 	// Args: cobra.MinimumNFlags(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()

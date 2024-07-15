@@ -5,21 +5,22 @@
 
 ## Documentation
 
-To learn more about Letme [go to the complete documentation](https://lockedinspace.com/letme/index.html
+Learn more about letme, [go to the complete documentation](https://lockedinspace.com/letme/index.html
 ).
 
 ## Why letme
-As current AWS administrators, we've found that:
+As AWS cloud administrators, we have found that:
 
-1. **It wasn't easy to manage** credentials from multiple accounts and **follow AWS best practices** at the same time.
+1. **It is not easy to manage** credentials from different accounts and **follow AWS best practices** at the same time.
+   
 2. Every team had a different tool to do the same task, we wanted a centralized way to manage credentials.
 
-3. _"On my local computer works."_
+3. No more _"On my local computer works."_ since we implemented a centralized way to obtain and manage credentials.
 
 ## Requirements
 
-- Go (recommended 1.22 or later).
-- AWS CLI (recommended v2).
+- Go (+1.22).
+- AWS CLI (v2).
 
 ## Install Letme
 

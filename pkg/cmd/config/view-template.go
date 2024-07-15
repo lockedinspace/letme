@@ -18,7 +18,7 @@ var ViewTemplate = &cobra.Command{
 			os.Exit(1)
 		}
 	},
-	Short: "View the a sample configuration file template",
+	Short: "View the a sample configuration file template.",
 	Long:  `View the a sample configuration file template, use that as an scaffolding for your needs.`,
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {

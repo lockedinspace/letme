@@ -16,8 +16,8 @@ var currentVersion = "v0.2.1"
 var versionPrettyName = "New Horizons"
 var RootCmd = &cobra.Command{
 	Use:   "letme",
-	Short: "A reliable, secure and fast way to switch between AWS accounts from the CLI.",
-	Long:  `A reliable, secure and fast way to switch between AWS accounts from the CLI.`,
+	Short: "A reliable, secure and fast way to switch between AWS accounts.",
+	Long:  `A reliable, secure and fast way to switch between AWS accounts.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		versionFlag, _ := cmd.Flags().GetBool("version")
 		if versionFlag {

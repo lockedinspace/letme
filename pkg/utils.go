@@ -35,6 +35,7 @@ var ExpectedKeys = map[string]bool{
 	"mfa_arn":                   true,
 	"session_name":              true,
 	"session_duration":          true,
+	"tags":                      true,
 }
 
 // Mandatory keys in letme-config file
@@ -49,18 +50,29 @@ type Context struct {
 }
 
 type LetmeContext struct {
-	AwsSourceProfile       string `ini:"aws_source_profile"`
-	AwsSourceProfileRegion string `ini:"aws_source_profile_region"`
-	AwsDynamoDbTable       string `ini:"dynamodb_table"`
-	AwsMfaArn              string `ini:"mfa_arn"`
-	AwsSessionName         string `ini:"session_name"`
-	AwsSessionDuration     int32  `ini:"session_duration"`
+	AwsSourceProfile       string   `ini:"aws_source_profile"`
+	AwsSourceProfileRegion string   `ini:"aws_source_profile_region"`
+	AwsDynamoDbTable       string   `ini:"dynamodb_table"`
+	AwsMfaArn              string   `ini:"mfa_arn"`
+	AwsSessionName         string   `ini:"session_name"`
+	AwsSessionDuration     int32    `ini:"session_duration"`
+	Tags                   []string `ini:"tags"`
 }
 
 type DynamoDbAccountConfig struct {
 	Name   string   `dynamodbav:"name"`
 	Region []string `dynamodbav:"region"`
 	Role   []string `dynamodbav:"role"`
+	Tags   []string `dynamodbav:"tags"`
+}
+
+type AccountItem struct {
+	Name   string `json:"name"`
+	Region string `json:"region"`
+}
+
+type AccountItems struct {
+	Items []AccountItem `json:"items"`
 }
 
 type ProfileConfig struct {
@@ -337,6 +349,20 @@ func dynamoDbTableInput(awsProfile string, awsRegion string) string {
 	return dynamoDbTableName
 }
 
+func letmeTagsInput() []string {
+	var tagInput string
+	fmt.Print("→ Tags (optional): ")
+	fmt.Scanln(&tagInput)
+
+	if len(tagInput) == 0 {
+		return []string{}
+	}
+
+	tags := strings.Split(tagInput, ",")
+
+	return tags
+}
+
 func NewContext(context string) {
 	fmt.Println("letme: creating/updating context '" + context + "'. Optional fields can be left empty.")
 	var letmeContext LetmeContext
@@ -347,6 +373,7 @@ func NewContext(context string) {
 	letmeContext.AwsMfaArn = mfaArnInput(letmeContext.AwsSourceProfile, letmeContext.AwsSourceProfileRegion)
 	letmeContext.AwsSessionDuration = sessionDurationInput()
 	letmeContext.AwsSessionName = sessionNameInput()
+	letmeContext.Tags = letmeTagsInput()
 
 	letmeConfig := LetmeConfigRead()
 
@@ -355,8 +382,13 @@ func NewContext(context string) {
 	if err := section.ReflectFrom(&letmeContext); err != nil {
 		CheckAndReturnError(err)
 	}
+
 	if len(letmeContext.AwsMfaArn) == 0 {
 		section.DeleteKey("mfa_arn")
+	}
+
+	if len(letmeContext.Tags) == 0 {
+		section.DeleteKey("tags")
 	}
 	letmeConfig.SaveTo(GetHomeDirectory() + "/.letme/letme-config")
 }
@@ -777,13 +809,13 @@ func GetAvalaibleContexts() []string {
 	return sortedSections
 }
 
-func GetAccount(AwsDynamoDbTable string, cfg aws.Config, profileName string) *DynamoDbAccountConfig {
+func GetAccount(awsDynamoDbTable string, cfg aws.Config, profileName string) *DynamoDbAccountConfig {
 	sesAwsDynamoDb := dynamodb.NewFromConfig(cfg)
 
 	account := new(DynamoDbAccountConfig)
 
 	resp, err := sesAwsDynamoDb.GetItem(context.TODO(), &dynamodb.GetItemInput{
-		TableName: aws.String(AwsDynamoDbTable),
+		TableName: aws.String(awsDynamoDbTable),
 		Key:       map[string]dynamodbTypes.AttributeValue{"name": &dynamodbTypes.AttributeValueMemberS{Value: profileName}},
 	})
 	CheckAndReturnError(err)
@@ -793,21 +825,63 @@ func GetAccount(AwsDynamoDbTable string, cfg aws.Config, profileName string) *Dy
 	return account
 }
 
-func GetSortedTable(AwsDynamoDbTable string, cfg aws.Config) {
+func GetTableData(awsDynamoDbTable string, tags []string, cfg aws.Config) (resp []DynamoDbAccountConfig) {
 	sesAwsDynamoDb := dynamodb.NewFromConfig(cfg)
-	resp, err := sesAwsDynamoDb.Scan(context.TODO(), &dynamodb.ScanInput{
-		TableName: aws.String(AwsDynamoDbTable),
-	})
-	CheckAndReturnError(err)
+	var accountList []DynamoDbAccountConfig
 
-	sorted := make([]string, 0, len(resp.Items))
+	switch {
+	case len(tags) > 0:
+		var filter []string
+		expressionAttributeValues := make(map[string]dynamodbTypes.AttributeValue, len(tags))
+
+		for _, tag := range tags {
+			expressionAttributeValues[":"+tag] = &dynamodbTypes.AttributeValueMemberS{Value: tag}
+			expression := fmt.Sprintf("contains(#tags, :%s)", tag)
+			filter = append(filter, expression)
+		}
+
+		filterExpression := strings.Join(filter, " AND ")
+
+		// fmt.Println(expressionAttributeValues, filterExpression)
+
+		resp, err := sesAwsDynamoDb.Scan(context.TODO(), &dynamodb.ScanInput{
+			TableName: aws.String(awsDynamoDbTable),
+			ExpressionAttributeNames: map[string]string{
+				"#tags": "tags",
+			},
+			ExpressionAttributeValues: expressionAttributeValues,
+			FilterExpression:          aws.String(filterExpression),
+		})
+		CheckAndReturnError(err)
+		for _, item := range resp.Items {
+			var account DynamoDbAccountConfig
+			err = attributevalue.UnmarshalMap(item, &account)
+			CheckAndReturnError(err)
+			accountList = append(accountList, account)
+		}
+	default:
+		resp, err := sesAwsDynamoDb.Scan(context.TODO(), &dynamodb.ScanInput{
+			TableName: aws.String(awsDynamoDbTable),
+		})
+		CheckAndReturnError(err)
+
+		for _, item := range resp.Items {
+			var account DynamoDbAccountConfig
+			err = attributevalue.UnmarshalMap(item, &account)
+			CheckAndReturnError(err)
+			accountList = append(accountList, account)
+		}
+	}
+
+	return accountList
+}
+
+func ListTextOutput(accountList []DynamoDbAccountConfig) {
+	sorted := make([]string, 0, len(accountList))
 	var nameLengths []int
 	var w *tabwriter.Writer
 
-	for _, item := range resp.Items {
-		var account DynamoDbAccountConfig
-		err = attributevalue.UnmarshalMap(item, &account)
-		CheckAndReturnError(err)
+	for _, account := range accountList {
 		sorted = append(sorted, account.Name+"\t"+account.Region[0])
 		nameLengths = append(nameLengths, len(account.Name))
 	}
@@ -821,6 +895,24 @@ func GetSortedTable(AwsDynamoDbTable string, cfg aws.Config) {
 		fmt.Fprintln(w, id)
 		w.Flush()
 	}
+}
+
+func ListJsonOutput(accountList []DynamoDbAccountConfig) {
+	// sorted := make([]string, 0, len(accountList))
+	var accountItems AccountItems
+
+	for _, account := range accountList {
+		accountItems.Items = append(accountItems.Items, AccountItem{Name: account.Name, Region: account.Region[0]})
+		// sorted = append(sorted, account.Name+"\t"+account.Region[0])
+	}
+
+	sort.Slice(accountItems.Items, func(i, j int) bool {
+		return accountItems.Items[i].Name < accountItems.Items[j].Name
+	})
+
+	jsonData, err := json.MarshalIndent(accountItems, "", " ")
+	CheckAndReturnError(err)
+	fmt.Println(string(jsonData))
 }
 
 func GetContextData(context string) *LetmeContext {

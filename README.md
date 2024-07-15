@@ -5,15 +5,15 @@
 
 ## Documentation
 
-Learn more about letme, [go to the complete documentation](https://lockedinspace.com/letme/index.html
+Learn more about letme: [visit the complete and most up-to-date documentation](https://lockedinspace.com/letme/index.html
 ).
 
 ## Why letme
 As AWS cloud administrators, we have found that:
 
-1. **It is not easy to manage** credentials from different accounts and **follow AWS best practices** at the same time.
+1. **It is not easy to manage** credentials for different accounts and **follow AWS best practices** at the same time.
    
-2. Every team had a different tool to do the same task, we wanted a centralized way to manage credentials.
+2. There is no common way to define the process of obtaining/updating/managing those credentials, **we wanted a centralized way to manage credentials**.
 
 3. No more _"On my local computer works."_ since we implemented a centralized way to obtain and manage credentials.
 
@@ -38,7 +38,7 @@ go install github.com/lockedinspace/letme@latest
 
 You can also install a specific version swapping ``@latest`` with your desired version.
 
-Available versions can be found as tags in the [letme official repo](https://github.com/lockedinspace/letme). 
+Available versions can be found as [releases](https://github.com/lockedinspace/letme/releases). 
 
 
 ### Building from source

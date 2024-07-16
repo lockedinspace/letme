@@ -12,11 +12,7 @@ var SwitchContext = &cobra.Command{
 	Use: "switch-context",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		utils.LetmeConfigCreate()
-		result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
-		if !result {
-			fmt.Println("letme: run 'letme config-file --verify' to obtain a template for your config file.")
-			os.Exit(1)
-		}
+		utils.ConfigFileHealth()
 	},
 	Short: "Switch to a context.",
 	Long:  `If the context exists, switch to the specified context.`,

@@ -12,11 +12,7 @@ var UpdateContext = &cobra.Command{
 	Use: "update-context",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		utils.LetmeConfigCreate()
-		result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
-		if !result {
-			fmt.Println("letme: run 'letme config-file --verify' to obtain a template for your config file.")
-			os.Exit(1)
-		}
+		utils.ConfigFileHealth()
 	},
 	Short: "Change context values.",
 	Long:  `Interactively update an existing context.`,

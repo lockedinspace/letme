@@ -12,14 +12,10 @@ var Validate = &cobra.Command{
 	Use: "validate",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		utils.LetmeConfigCreate()
-		result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
-		if !result {
-			fmt.Println("letme: run 'letme config-file --verify' to obtain a template for your config file.")
-			os.Exit(1)
-		}
+		utils.ConfigFileHealth()
 	},
-	Short: "Validate the config file.",
-	Long:  `Validate the config file structure and integrity.`,
+	Short: "Validate or create the config file.",
+	Long:  `Validate or create the config file. Check also for its file structure integrity.`,
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		homeDir := utils.GetHomeDirectory()

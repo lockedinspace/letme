@@ -5,6 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	dynamodbTypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,15 +22,6 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	dynamodbTypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/aws/aws-sdk-go-v2/service/iam"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 
 	"gopkg.in/ini.v1"
 )
@@ -619,26 +618,26 @@ func ReturnAccountCredentials(accountName string) map[string]string {
 func RemoveAccountFromDatabaseFile(accountName string) {
 	jsonData, err := os.ReadFile(GetHomeDirectory() + "/.letme/.letme-db")
 	CheckAndReturnError(err)
-	// Unmarshal JSON data into a slice of maps
+	//unmarshal JSON data into a slice of maps
 	var data []map[string]interface{}
 	if err := json.Unmarshal([]byte(jsonData), &data); err != nil {
 		CheckAndReturnError(err)
 	}
 
-	// Iterate over each object in the slice
+	//iterate over each object in the slice
 	for i, obj := range data {
-		// Check if the "name" field of the "account" object is "adaral"
+		//check if the "name" field of the "account" object is "adaral"
 		if name, ok := obj["account"].(map[string]interface{})["name"].(string); ok && name == accountName {
-			// Remove the object from the slice
+			//remove the object from the slice
 			data = append(data[:i], data[i+1:]...)
-			break // Break after removing to avoid index out of range error
+			break //break after removing to avoid index out of range error
 		}
 	}
 
 	updatedJsonData, err := json.MarshalIndent(data, "", "  ")
 	CheckAndReturnError(err)
 
-	// Write the prettified JSON data to the file /test.json
+	//write the prettified JSON data to the file /test.json
 	if err := os.WriteFile(GetHomeDirectory()+"/.letme/.letme-db", updatedJsonData, 0600); err != nil {
 		CheckAndReturnError(err)
 	}
@@ -661,7 +660,6 @@ func LetmeConfigCreate() {
 	_, err := os.Stat(filePath)
 
 	if os.IsNotExist(err) {
-		fmt.Println("here")
 		letmeConfigFileCreate, err := os.Create(filePath)
 		CheckAndReturnError(err)
 		defer letmeConfigFileCreate.Close()
@@ -723,16 +721,16 @@ func LoadAwsConfig(profileName string, profileConfig ProfileConfig) {
 func UpdateContext(context string) {
 	filePath := GetHomeDirectory() + "/.letme/.letme-usersettings"
 
-	// Check if the file exists
+	//check if the file exists
 	if _, err := os.Stat(filePath); err == nil {
-		// File exists, read the current content
+		//file exists, read the current content
 		content, err := ini.Load(filePath)
 
 		if err != nil {
 			CheckAndReturnError(err)
 		}
 
-		// Reads "context" section and updates "active_context" field
+		//reads "context" section and updates "active_context" field
 		contextSection := content.Section("context")
 		err = contextSection.ReflectFrom(&Context{
 			ActiveContext: context,
@@ -742,7 +740,7 @@ func UpdateContext(context string) {
 			CheckAndReturnError(err)
 		}
 
-		// Saves the updated data onto the file
+		//saves the updated data onto the file
 		content.SaveTo(filePath)
 
 	} else if os.IsNotExist(err) {
@@ -757,7 +755,7 @@ func UpdateContext(context string) {
 		CheckAndReturnError(err)
 		_, err = content.WriteTo(userSettings)
 		CheckAndReturnError(err)
-		// An unexpected error occurred
+		//an unexpected error occurred
 	} else {
 		CheckAndReturnError(err)
 	}
@@ -766,11 +764,11 @@ func UpdateContext(context string) {
 func GetCurrentContext() string {
 	filePath := GetHomeDirectory() + "/.letme/.letme-usersettings"
 
-	// Check if the file exists if not exists returns "general"
+	//check if the file exists if not exists returns "general"
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return "general"
 	}
-	// Read the content of the file
+	//read the content of the file
 	content, err := ini.Load(filePath)
 	content.BlockMode = false
 
@@ -778,7 +776,7 @@ func GetCurrentContext() string {
 		CheckAndReturnError(err)
 	}
 
-	// Maps "context" section to settings variable and returns the active context
+	//maps "context" section to settings variable and returns the active context
 	settings := new(Context)
 	section, err := content.GetSection("context")
 	CheckAndReturnError(err)
@@ -918,9 +916,15 @@ func ListJsonOutput(accountList []DynamoDbAccountConfig) {
 func GetContextData(context string) *LetmeContext {
 	filePath := GetHomeDirectory() + "/.letme/letme-config"
 
-	// Check if the file exists
+	//check if the file exists
 	if _, err := os.Stat(filePath); err != nil {
 		CheckAndReturnError(err)
+	}
+
+	//check if the file is empty
+	if info, err := os.Stat(filePath); err == nil && info.Size() == 0 {
+		fmt.Println("letme: no contexts found. Run 'letme config new-context ${contextName}' to create one.")
+		os.Exit(1)
 	}
 
 	config, err := ini.Load(filePath)
@@ -938,7 +942,7 @@ func GetContextData(context string) *LetmeContext {
 }
 
 func AssumeRole(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa string, account *DynamoDbAccountConfig, renew bool, localCredentialProcessFlagV1 bool, authMethod string) (ProfileCredential, ProfileConfig) {
-	// If credentials not expired
+	//if credentials not expired
 	if CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1 && !renew {
 		cachedCredentials := ReturnAccountCredentials(account.Name)
 		profileCredential := ProfileCredential{
@@ -1012,7 +1016,7 @@ func AssumeRole(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa strin
 }
 
 func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMfa string, account *DynamoDbAccountConfig, renew bool, localCredentialProcessFlagV1 bool, authMethod string) (ProfileCredential, ProfileConfig) {
-	// If credentials not expired
+	//if credentials not expired
 	if CheckAccountAvailability(account.Name) && !localCredentialProcessFlagV1 {
 		cachedCredentials := ReturnAccountCredentials(account.Name)
 		profileCredential := ProfileCredential{
@@ -1039,7 +1043,7 @@ func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMf
 	for i := range account.Role {
 		fmt.Printf("[%v/%v]\n", i+1, len(account.Role))
 		switch {
-		// First hop with --inline-mfa flag
+		//first hop with --inline-mfa flag
 		case i == 0 && len(letmeContext.AwsMfaArn) > 0 && len(inlineTokenMfa) > 0:
 			input = &sts.AssumeRoleInput{
 				RoleArn:         &account.Role[i],
@@ -1050,7 +1054,7 @@ func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMf
 			}
 			output, err = sesAwsSts.AssumeRole(context.TODO(), input)
 			CheckAndReturnError(err)
-		// First hop with interactive MFA token
+		//first hop with interactive MFA token
 		case i == 0 && len(letmeContext.AwsMfaArn) > 0 && len(inlineTokenMfa) <= 0:
 			var tokenMfa string
 			fmt.Printf("Enter MFA one time pass code: ")
@@ -1064,7 +1068,7 @@ func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMf
 			}
 			output, err = sesAwsSts.AssumeRole(context.TODO(), input)
 			CheckAndReturnError(err)
-		// First hop without MFA
+		//first hop without MFA
 		case i == 0:
 			input = &sts.AssumeRoleInput{
 				RoleArn:         &account.Role[i],
@@ -1073,7 +1077,7 @@ func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMf
 			}
 			output, err = sesAwsSts.AssumeRole(context.TODO(), input)
 			CheckAndReturnError(err)
-		// Chained AssumneRoles with credentials from previous iterations
+		//chained AssumneRoles with credentials from previous iterations
 		default:
 			cfg, err := config.LoadDefaultConfig(context.TODO(),
 				config.WithRegion(account.Region[0]),
@@ -1113,4 +1117,19 @@ func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMf
 		DatabaseFile(account.Name, letmeContext.AwsSessionDuration, CredentialsProcessOutput(profileCredential.AccessKey, profileCredential.SecretKey, profileCredential.SessionToken, *output.Credentials.Expiration), authMethod) //only when we really authenticate against aws
 	}
 	return profileCredential, profileConfig
+}
+
+// Check if letme-config file exists and if its valid
+func ConfigFileHealth() {
+	if _, err := os.Stat(GetHomeDirectory() + "/.letme/letme-config"); err == nil {
+	} else {
+		fmt.Println("letme: could not locate any config file. Run 'letme config new-context ${contextName}' to create it.")
+		os.Exit(1)
+	}
+	result := CheckConfigFile(GetHomeDirectory() + "/.letme/letme-config")
+	if result {
+	} else {
+		fmt.Println("letme: run 'letme config view-template' to obtain a template for your config file.")
+		os.Exit(1)
+	}
 }

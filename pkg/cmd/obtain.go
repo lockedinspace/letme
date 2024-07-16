@@ -14,17 +14,7 @@ var obtainCmd = &cobra.Command{
 	Use:     "obtain",
 	Aliases: []string{"ob"},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		if _, err := os.Stat(utils.GetHomeDirectory() + "/.letme/letme-config"); err == nil {
-		} else {
-			fmt.Println("letme: could not locate any config file. Please run 'letme config-file' to create one.")
-			os.Exit(1)
-		}
-		result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
-		if result {
-		} else {
-			fmt.Println("letme: run 'letme config-file --verify' to obtain a template for your config file.")
-			os.Exit(1)
-		}
+		utils.ConfigFileHealth()
 	},
 	Short: "Obtain account credentials.",
 	Long: `Obtain AWS STS assumed credentials once the user authenticates itself.

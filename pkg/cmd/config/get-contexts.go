@@ -12,11 +12,7 @@ var GetContexts = &cobra.Command{
 	Use: "get-contexts",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		utils.LetmeConfigCreate()
-		result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
-		if !result {
-			fmt.Println("letme: run 'letme config-file --verify' to obtain a template for your config file.")
-			os.Exit(1)
-		}
+		utils.ConfigFileHealth()
 	},
 	Short: "Get active and available contexts.",
 	Long:  `List all configured contexts in your letme-config file marking the active context with '*'`,

@@ -13,17 +13,7 @@ import (
 var listCmd = &cobra.Command{
 	Use: "list",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		if _, err := os.Stat(utils.GetHomeDirectory() + "/.letme/letme-config"); err == nil {
-		} else {
-			fmt.Println("letme: could not locate any config file. Run 'letme config-file' to create one.")
-			os.Exit(1)
-		}
-		result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
-		if result {
-		} else {
-			fmt.Println("letme: run 'letme config-file --verify' to obtain a template for your config file.")
-			os.Exit(1)
-		}
+		utils.ConfigFileHealth()
 	},
 	Short: "List accounts.",
 	Long:  `List all the AWS accounts and their main region.`,
@@ -66,5 +56,5 @@ var listCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(listCmd)
 	listCmd.Flags().StringArray("filter", []string{}, "a comma delimited list to filter output based on tags")
-	listCmd.Flags().StringP("output", "o", "text", "formatting style")
+	listCmd.Flags().StringP("output", "o", "text", "output results in specific format (text|json)")
 }

@@ -23,7 +23,7 @@ var UpdateContext = &cobra.Command{
 
 		for _, section := range contexts {
 			if section == letmeContext {
-				utils.NewContext(letmeContext)
+				utils.NewContext(letmeContext, 1)
 				fmt.Println("letme: updated '" + letmeContext + "' context.")
 				os.Exit(0)
 			}

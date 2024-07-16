@@ -6,6 +6,7 @@ import (
 
 	utils "github.com/lockedinspace/letme/pkg"
 	"github.com/spf13/cobra"
+	"gopkg.in/ini.v1"
 )
 
 var NewContext = &cobra.Command{
@@ -27,8 +28,17 @@ var NewContext = &cobra.Command{
 				os.Exit(1)
 			}
 		}
-		utils.NewContext(letmeContext)
+		utils.NewContext(letmeContext, 0)
 		fmt.Println("Created letme '" + letmeContext + "' context.")
+		filePath := utils.GetHomeDirectory() + "/.letme/letme-config"
+		cfg, err := ini.Load(filePath)
+		utils.CheckAndReturnError(err)
+		hasOneSection := len(cfg.SectionStrings()) == 2
+
+		if hasOneSection {
+			utils.UpdateContext(letmeContext)
+			fmt.Println("Setting '" + letmeContext + "' as the default context.")
+		}
 	},
 }
 

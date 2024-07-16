@@ -304,7 +304,7 @@ func sourceProfileInput() string {
 		}
 
 		if !credentialsProfileExists {
-			fmt.Println("letme: profile name does not exist in your AWS credentials file. Sspecify a valid profile.")
+			fmt.Println("letme: profile name does not exist in your AWS credentials file. Specify a valid profile.")
 			continue
 		}
 		break
@@ -362,8 +362,12 @@ func letmeTagsInput() []string {
 	return tags
 }
 
-func NewContext(context string) {
-	fmt.Println("letme: creating/updating context '" + context + "'. Optional fields can be left empty.")
+func NewContext(context string, mode int) {
+	if mode == 0 {
+		fmt.Println("letme: creating context '" + context + "'. Optional fields can be left empty.")
+	} else if mode == 1 {
+		fmt.Println("letme: updating context '" + context + "'. Optional fields can be left empty.")
+	}
 	var letmeContext LetmeContext
 
 	letmeContext.AwsSourceProfile = sourceProfileInput()
@@ -1123,7 +1127,7 @@ func AssumeRoleChained(letmeContext *LetmeContext, cfg aws.Config, inlineTokenMf
 func ConfigFileHealth() {
 	if _, err := os.Stat(GetHomeDirectory() + "/.letme/letme-config"); err == nil {
 	} else {
-		fmt.Println("letme: could not locate any config file. Run 'letme config new-context ${contextName}' to create it.")
+		fmt.Println("letme: no contexts found. Run 'letme config new-context ${contextName}' to create one.")
 		os.Exit(1)
 	}
 	result := CheckConfigFile(GetHomeDirectory() + "/.letme/letme-config")

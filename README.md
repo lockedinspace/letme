@@ -5,8 +5,7 @@
 
 ## Documentation
 
-Learn more about letme: [visit the complete and most up-to-date documentation](https://lockedinspace.com/letme/index.html
-).
+Learn more about letme: [visit the complete and most up-to-date documentation](https://www.getletme.com/).
 
 ## Why letme
 As AWS cloud administrators, we have found that:

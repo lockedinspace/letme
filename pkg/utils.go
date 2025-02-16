@@ -671,16 +671,22 @@ func AwsConfigFileReadV2() *ini.File {
 }
 
 func LetmeConfigCreate() {
-	filePath := GetHomeDirectory() + "/.letme/letme-config"
-	_, err := os.Stat(filePath)
+	homeDir := GetHomeDirectory()
+    configDir := filepath.Join(homeDir, ".letme")
+    filePath := filepath.Join(configDir, "letme-config")
 
-	if os.IsNotExist(err) {
-		letmeConfigFileCreate, err := os.Create(filePath)
-		CheckAndReturnError(err)
-		defer letmeConfigFileCreate.Close()
-	} else {
-		CheckAndReturnError(err)
-	}
+	// If letme is installed on a clean machine, this function will fail cause the parent directory .letme/ is not created...
+    err := os.MkdirAll(configDir, 0755)
+    CheckAndReturnError(err)
+
+    _, err = os.Stat(filePath)
+    if os.IsNotExist(err) {
+        file, err := os.Create(filePath)
+        CheckAndReturnError(err)
+        defer file.Close()
+    } else {
+        CheckAndReturnError(err)
+    }
 }
 
 func LetmeConfigRead() *ini.File {

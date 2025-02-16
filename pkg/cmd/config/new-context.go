@@ -12,6 +12,7 @@ import (
 var NewContext = &cobra.Command{
 	Use: "new-context",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		fmt.Println("debug purposes")
 		utils.LetmeConfigCreate()
 		utils.ConfigFileHealth()
 	},

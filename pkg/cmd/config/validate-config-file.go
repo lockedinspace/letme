@@ -19,6 +19,7 @@ var Validate = &cobra.Command{
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		context, err := cmd.Flags().GetString("context")
+		utils.CheckAndReturnError(err)
 		homeDir := utils.GetHomeDirectory()
 		if _, err := os.Stat(homeDir + "/.letme/" + "letme-config"); err == nil {
 			result := utils.CheckConfigFile(utils.GetHomeDirectory() + "/.letme/letme-config")
@@ -26,7 +27,7 @@ var Validate = &cobra.Command{
 				utils.TemplateConfigFile(true)
 			}
 			fmt.Println("letme: the letme config file structure is valid.")
-			if context {
+			if context != nil {
 				fmt.Print("context endpoint validation called")
 			}
 			os.Exit(0)

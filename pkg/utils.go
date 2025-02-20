@@ -294,8 +294,6 @@ func sessionNameInput() string {
 }
 
 func sourceProfileInput() string {
-	// config := AwsConfigFileReadV2()
-	// credentials := AwsCredsFileReadV2()
 	var awsProfile string
 
 	// We are going to be more permissive to the end user, we'll include a --verify flag for the letme config $PROFILE --verify which will test
@@ -1306,6 +1304,24 @@ func GenerateSigninURL(accessKey, secretKey, sessionToken, region string) (strin
 }
 
 func ValidateContext(context string) bool {
-	fmt.Print("letme: validating reachability for context: " + context)
+	letmeContext := GetContextData(context)
+	ValidateContextProfileName(letmeContext.AwsSourceProfile)
 	return false
+}
+
+func ValidateContextProfileName(profileName string) bool {
+	config := AwsConfigFileReadV2()
+	credentials := AwsCredsFileReadV2()
+	if config.HasSection("profile "+profileName) || config.HasSection(profileName) {
+	} else {
+		fmt.Println("letme: the AWS profile you specified '" + profileName + "' could not be found in your config file " + GetHomeDirectory() + "/.aws/config. Tried to search for '[profile] " + profileName + "'")
+		return false
+	}
+	if credentials.HasSection(profileName) {
+	} else {
+		fmt.Println("letme: the AWS profile you specified '" + profileName + "' could not be found in your credentials file " + GetHomeDirectory() + "/.aws/credentials. Tried to search for '[" + profileName + "]'")
+		return false
+	}
+	return true
+	
 }

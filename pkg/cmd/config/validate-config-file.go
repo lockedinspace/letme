@@ -15,7 +15,7 @@ var Validate = &cobra.Command{
 		utils.ConfigFileHealth()
 	},
 	Short: "Validates the config file structure and context parameters.",
-	Long:  `Validates if the config file has the right structure. Pass the --context flag if you want to validate the context endpoint reachability.`,
+	Long:  `Validates if the config file has the right structure. Pass the --context flag if you want to validate the context reachability.`,
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		context, err := cmd.Flags().GetString("context")
@@ -28,7 +28,7 @@ var Validate = &cobra.Command{
 			}
 			fmt.Println("letme: the letme config file structure is valid.")
 			if len(context) > 0 {
-				fmt.Print("context endpoint validation called: " + context)
+				utils.ValidateContext(context)
 			}
 			os.Exit(0)
 		} else {

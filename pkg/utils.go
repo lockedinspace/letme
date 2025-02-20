@@ -1256,38 +1256,32 @@ func ActiveAccounts() (string, error) {
 }
 
 func GenerateSigninURL(accessKey, secretKey, sessionToken, region string) (string, error) {
-	// Create a session map with temporary credentials
 	session := map[string]string{
 		"sessionId":    accessKey,
 		"sessionKey":   secretKey,
 		"sessionToken": sessionToken,
 	}
 
-	// Marshal the session into JSON
 	sessionJson, err := json.Marshal(session)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal session: %w", err)
 	}
 
-	// Construct the getSigninToken URL
 	getSigninTokenURL := "https://signin.aws.amazon.com/federation"
 	getSigninTokenURL += "?Action=getSigninToken"
 	getSigninTokenURL += "&Session=" + url.QueryEscape(string(sessionJson))
 
-	// Make the request to getSigninToken
 	resp, err := http.Get(getSigninTokenURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to get sign-in token: %w", err)
 	}
 	defer resp.Body.Close()
 
-	// Read the response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	// Unmarshal the response to get the sign-in token
 	var tokenResponse map[string]string
 	if err := json.Unmarshal(body, &tokenResponse); err != nil {
 		return "", fmt.Errorf("failed to unmarshal token response: %w", err)
@@ -1297,14 +1291,11 @@ func GenerateSigninURL(accessKey, secretKey, sessionToken, region string) (strin
 		return "", fmt.Errorf("signin token not found in response")
 	}
 
-	// Construct the final AWS console sign-in URL with the region
-	// The console URL includes the region if specified
 	destination := "https://console.aws.amazon.com/"
 	if region != "" {
 		destination = fmt.Sprintf("https://%s.console.aws.amazon.com/console/home?region=%s", region, region)
 	}
 
-	// Final sign-in URL
 	signinURL := "https://signin.aws.amazon.com/federation"
 	signinURL += "?Action=login"
 	signinURL += "&Issuer=MyApp"
@@ -1312,4 +1303,9 @@ func GenerateSigninURL(accessKey, secretKey, sessionToken, region string) (strin
 	signinURL += "&SigninToken=" + signinToken
 
 	return signinURL, nil
+}
+
+func ValidateContext(context string) bool {
+	fmt.Print("letme: validating reachability for context: " + context)
+	return false
 }

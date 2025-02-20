@@ -180,7 +180,7 @@ func TemplateConfigFile(stdout bool) {
 	}
 }
 
-func mfaArnInput(awsProfile string) string {
+func mfaArnInput() string {
 	var mfaArn string
 	mfaArnRegex := `^arn:aws:iam::[0-9]{12}:mfa\/[\S]+$`
 	//cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(awsProfile), config.WithRegion(awsRegion))
@@ -238,9 +238,16 @@ func mfaArnInput(awsProfile string) string {
 
 func sourceProfileRegionInput() string {
 	var awsRegion string
-	fmt.Print("→ AWS Source Profile Region: ")
-	fmt.Scanln(&awsRegion)
-	return awsRegion
+	for {
+		fmt.Print("→ AWS Source Profile Region: ")
+		if len(dynamoDbTableName) == 0 {
+			fmt.Println("letme: the DynamoDB table name can not be empty ")
+			continue
+		}
+		fmt.Scanln(&awsRegion)
+		return awsRegion
+	}
+	
 }
 
 func sessionDurationInput() int32 {
@@ -385,7 +392,7 @@ func NewContext(context string, mode int) {
 	letmeContext.AwsSourceProfile = sourceProfileInput()
 	letmeContext.AwsSourceProfileRegion = sourceProfileRegionInput()
 	letmeContext.AwsDynamoDbTable = dynamoDbTableInput()
-	letmeContext.AwsMfaArn = mfaArnInput(letmeContext.AwsSourceProfile)
+	letmeContext.AwsMfaArn = mfaArnInput()
 	letmeContext.AwsSessionDuration = sessionDurationInput()
 	letmeContext.AwsSessionName = sessionNameInput()
 	letmeContext.Tags = letmeTagsInput()

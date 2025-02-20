@@ -27,8 +27,8 @@ var Validate = &cobra.Command{
 				utils.TemplateConfigFile(true)
 			}
 			fmt.Println("letme: the letme config file structure is valid.")
-			if context != nil {
-				fmt.Print("context endpoint validation called")
+			if len(context) > 0 {
+				fmt.Print("context endpoint validation called: " + context)
 			}
 			os.Exit(0)
 		} else {

@@ -261,7 +261,7 @@ func sessionDurationInput() int32 {
 			fmt.Println("letme: expected integer not string.")
 			continue
 		} else if duration < 900 || duration > 43200 {
-			fmt.Println("letme: token session duration cannot be lower than 15 minutes or higher than 12 hours.")
+			fmt.Println("letme: token session duration must be between 15 minutes (900 seconds) and 12 hours (43200 seconds).")
 			continue
 		} else {
 			sessionDuration = int32(duration)

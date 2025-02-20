@@ -240,11 +240,11 @@ func sourceProfileRegionInput() string {
 	var awsRegion string
 	for {
 		fmt.Print("→ AWS Source Profile Region: ")
+		fmt.Scanln(&awsRegion)
 		if len(awsRegion) == 0 {
 			fmt.Println("letme: the region name can not be empty ")
 			continue
 		}
-		fmt.Scanln(&awsRegion)
 		break
 	}
 	return awsRegion

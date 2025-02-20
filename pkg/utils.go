@@ -180,7 +180,7 @@ func TemplateConfigFile(stdout bool) {
 	}
 }
 
-func mfaArnInput() string {
+func mfaArnInput(awsProfile string) string {
 	var mfaArn string
 	mfaArnRegex := `^arn:aws:iam::[0-9]{12}:mfa\/[\S]+$`
 	//cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(awsProfile), config.WithRegion(awsRegion))
@@ -217,12 +217,12 @@ func mfaArnInput() string {
 
 		re := regexp.MustCompile(mfaArnRegex)
 		switch re.MatchString(mfaArn) {
-		case true:
-			for _, arn := range mfaDevices {
-				if arn == mfaArn {
-					break
-				}
-			}
+		// case true:
+		// 	for _, arn := range mfaDevices {
+		// 		if arn == mfaArn {
+		// 			break
+		// 		}
+		// 	}
 		case false:
 			fmt.Println("letme: not a valid MFA device arn. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile " + awsProfile)
 			continue
@@ -392,7 +392,7 @@ func NewContext(context string, mode int) {
 	letmeContext.AwsSourceProfile = sourceProfileInput()
 	letmeContext.AwsSourceProfileRegion = sourceProfileRegionInput()
 	letmeContext.AwsDynamoDbTable = dynamoDbTableInput()
-	letmeContext.AwsMfaArn = mfaArnInput()
+	letmeContext.AwsMfaArn = mfaArnInput(context)
 	letmeContext.AwsSessionDuration = sessionDurationInput()
 	letmeContext.AwsSessionName = sessionNameInput()
 	letmeContext.Tags = letmeTagsInput()

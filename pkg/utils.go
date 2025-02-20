@@ -208,7 +208,7 @@ func mfaArnInput(awsProfile string) string {
 
 	// mfaArnExists := false
 	for {
-		fmt.Print("→ AWS MFA Device arn (optional): ")
+		fmt.Print("→ AWS ARN MFA Device (optional): ")
 		fmt.Scanln(&mfaArn)
 
 		if len(mfaArn) == 0 {

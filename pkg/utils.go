@@ -290,34 +290,36 @@ func sourceProfileInput() string {
 	credentials := AwsCredsFileReadV2()
 	var awsProfile string
 
+	// We are going to be more permissive to the end user, we'll include a --verify flag for the letme config $PROFILE --verify which will test
+	// if the values are correct (profile exists from within AWS creds files, region is valid, dynamodb exists...)
 	for {
 		fmt.Print("→ AWS Source Profile Name: ")
 		fmt.Scanln(&awsProfile)
-		configProfileExists := false
-		credentialsProfileExists := false
+		// configProfileExists := false
+		// credentialsProfileExists := false
 
 		if len(awsProfile) == 0 {
-			fmt.Println("letme: AWS Profile Name field is required ")
+			fmt.Println("letme: the profile name can not be empty")
 			continue
 		}
 
-		if config.HasSection("profile "+awsProfile) || config.HasSection(awsProfile) {
-			configProfileExists = true
-		}
+		// if config.HasSection("profile "+awsProfile) || config.HasSection(awsProfile) {
+		// 	configProfileExists = true
+		// }
 
-		if credentials.HasSection(awsProfile) {
-			credentialsProfileExists = true
-		}
+		// if credentials.HasSection(awsProfile) {
+		// 	credentialsProfileExists = true
+		// }
 
-		if !configProfileExists {
-			fmt.Println("letme: profile name does not exist in your AWS config file. Specify a valid profile.")
-			continue
-		}
+		// if !configProfileExists {
+		// 	fmt.Println("letme: profile name does not exist in your AWS config file. Specify a valid profile.")
+		// 	continue
+		// }
 
-		if !credentialsProfileExists {
-			fmt.Println("letme: profile name does not exist in your AWS credentials file. Specify a valid profile.")
-			continue
-		}
+		// if !credentialsProfileExists {
+		// 	fmt.Println("letme: profile name does not exist in your AWS credentials file. Specify a valid profile.")
+		// 	continue
+		// }
 		break
 	}
 	return awsProfile

@@ -325,14 +325,14 @@ func sourceProfileInput() string {
 	return awsProfile
 }
 
-func dynamoDbTableInput(awsProfile string, awsRegion string) string {
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(awsProfile), config.WithRegion(awsRegion))
-	CheckAndReturnError(err)
+func dynamoDbTableInput() string {
+	//cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(awsProfile), config.WithRegion(awsRegion))
+	//CheckAndReturnError(err)
 
-	sesAwsDynamoDb := dynamodb.NewFromConfig(cfg)
+	//sesAwsDynamoDb := dynamodb.NewFromConfig(cfg)
 
-	resp, err := sesAwsDynamoDb.ListTables(context.TODO(), &dynamodb.ListTablesInput{})
-	CheckAndReturnError(err)
+	//resp, err := sesAwsDynamoDb.ListTables(context.TODO(), &dynamodb.ListTablesInput{})
+	//CheckAndReturnError(err)
 	var dynamoDbTableName string
 
 	for {
@@ -344,17 +344,17 @@ func dynamoDbTableInput(awsProfile string, awsRegion string) string {
 			continue
 		}
 
-		tableExists := false
-		for _, table := range resp.TableNames {
-			if table == dynamoDbTableName {
-				tableExists = true
-			}
-		}
+		// tableExists := false
+		// for _, table := range resp.TableNames {
+		// 	if table == dynamoDbTableName {
+		// 		tableExists = true
+		// 	}
+		// }
 
-		if !tableExists {
-			fmt.Println("letme: DynamoDB Table not found.")
-			continue
-		}
+		// if !tableExists {
+		// 	fmt.Println("letme: DynamoDB Table not found.")
+		// 	continue
+		// }
 
 		break
 	}
@@ -385,7 +385,7 @@ func NewContext(context string, mode int) {
 
 	letmeContext.AwsSourceProfile = sourceProfileInput()
 	letmeContext.AwsSourceProfileRegion = sourceProfileRegionInput()
-	letmeContext.AwsDynamoDbTable = dynamoDbTableInput(letmeContext.AwsSourceProfile, letmeContext.AwsSourceProfileRegion)
+	letmeContext.AwsDynamoDbTable = dynamoDbTableInput()
 	letmeContext.AwsMfaArn = mfaArnInput(letmeContext.AwsSourceProfile, letmeContext.AwsSourceProfileRegion)
 	letmeContext.AwsSessionDuration = sessionDurationInput()
 	letmeContext.AwsSessionName = sessionNameInput()

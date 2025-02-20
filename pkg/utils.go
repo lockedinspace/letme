@@ -339,7 +339,7 @@ func dynamoDbTableInput() string {
 		fmt.Scanln(&dynamoDbTableName)
 
 		if len(dynamoDbTableName) == 0 {
-			fmt.Println("letme: DynamoDB Table Name field is required.")
+			fmt.Println("letme: the DynamoDB table name can not be empty ")
 			continue
 		}
 

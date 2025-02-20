@@ -245,8 +245,9 @@ func sourceProfileRegionInput() string {
 			continue
 		}
 		fmt.Scanln(&awsRegion)
-		return awsRegion
+		break
 	}
+	return awsRegion
 	
 }
 

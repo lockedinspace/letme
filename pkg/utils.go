@@ -286,8 +286,8 @@ func sessionNameInput() string {
 }
 
 func sourceProfileInput() string {
-	config := AwsConfigFileReadV2()
-	credentials := AwsCredsFileReadV2()
+	// config := AwsConfigFileReadV2()
+	// credentials := AwsCredsFileReadV2()
 	var awsProfile string
 
 	// We are going to be more permissive to the end user, we'll include a --verify flag for the letme config $PROFILE --verify which will test

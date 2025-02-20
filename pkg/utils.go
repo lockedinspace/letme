@@ -215,18 +215,19 @@ func mfaArnInput(awsProfile string) string {
 			return ""
 		}
 
-		re := regexp.MustCompile(mfaArnRegex)
-		switch re.MatchString(mfaArn) {
+		// re := regexp.MustCompile(mfaArnRegex)
+		// switch re.MatchString(mfaArn) {
 		// case true:
 		// 	for _, arn := range mfaDevices {
 		// 		if arn == mfaArn {
 		// 			break
 		// 		}
 		// 	}
-		case false:
-			fmt.Println("letme: not a valid MFA device arn. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile " + awsProfile)
-			continue
-		}
+		// case false:
+		// 	fmt.Println("letme: not a valid MFA device arn. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile " + awsProfile)
+		// 	continue
+		// }
+		
 		// if !mfaArnExists {
 		// 	fmt.Println("letme: MFA Device not found. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile " + awsProfile)
 		// 	continue

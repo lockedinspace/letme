@@ -240,8 +240,8 @@ func sourceProfileRegionInput() string {
 	var awsRegion string
 	for {
 		fmt.Print("→ AWS Source Profile Region: ")
-		if len(dynamoDbTableName) == 0 {
-			fmt.Println("letme: the DynamoDB table name can not be empty ")
+		if len(awsRegion) == 0 {
+			fmt.Println("letme: the region name can not be empty ")
 			continue
 		}
 		fmt.Scanln(&awsRegion)

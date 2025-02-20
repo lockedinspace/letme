@@ -19,7 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
+	//"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -182,7 +182,7 @@ func TemplateConfigFile(stdout bool) {
 
 func mfaArnInput(awsProfile string) string {
 	var mfaArn string
-	mfaArnRegex := `^arn:aws:iam::[0-9]{12}:mfa\/[\S]+$`
+	//mfaArnRegex := `^arn:aws:iam::[0-9]{12}:mfa\/[\S]+$`
 	//cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(awsProfile), config.WithRegion(awsRegion))
 	//CheckAndReturnError(err)
 
@@ -227,7 +227,7 @@ func mfaArnInput(awsProfile string) string {
 		// 	fmt.Println("letme: not a valid MFA device arn. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile " + awsProfile)
 		// 	continue
 		// }
-		
+
 		// if !mfaArnExists {
 		// 	fmt.Println("letme: MFA Device not found. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile " + awsProfile)
 		// 	continue

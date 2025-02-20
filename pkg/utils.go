@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	dynamodbTypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/aws/aws-sdk-go-v2/service/iam"
+	//"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"os"
 	"os/exec"
@@ -220,7 +220,6 @@ func mfaArnInput(awsProfile string) string {
 		case true:
 			for _, arn := range mfaDevices {
 				if arn == mfaArn {
-					mfaArnExists = true
 					break
 				}
 			}
@@ -228,10 +227,10 @@ func mfaArnInput(awsProfile string) string {
 			fmt.Println("letme: not a valid MFA device arn. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile " + awsProfile)
 			continue
 		}
-		if !mfaArnExists {
-			fmt.Println("letme: MFA Device not found. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile " + awsProfile)
-			continue
-		}
+		// if !mfaArnExists {
+		// 	fmt.Println("letme: MFA Device not found. Run 'aws iam list-mfa-devices --query 'MFADevices[*].SerialNumber --profile " + awsProfile)
+		// 	continue
+		// }
 		break
 	}
 	return mfaArn

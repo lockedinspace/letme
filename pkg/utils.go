@@ -180,33 +180,33 @@ func TemplateConfigFile(stdout bool) {
 	}
 }
 
-func mfaArnInput(awsProfile string, awsRegion string) string {
+func mfaArnInput(awsProfile string) string {
 	var mfaArn string
 	mfaArnRegex := `^arn:aws:iam::[0-9]{12}:mfa\/[\S]+$`
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(awsProfile), config.WithRegion(awsRegion))
-	CheckAndReturnError(err)
+	//cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(awsProfile), config.WithRegion(awsRegion))
+	//CheckAndReturnError(err)
 
-	sesIam := iam.NewFromConfig(cfg)
+	//sesIam := iam.NewFromConfig(cfg)
 
-	currentUser, err := sesIam.GetUser(context.TODO(), &iam.GetUserInput{})
-	CheckAndReturnError(err)
+	//currentUser, err := sesIam.GetUser(context.TODO(), &iam.GetUserInput{})
+	//CheckAndReturnError(err)
 
-	iamResp, err := sesIam.ListMFADevices(context.TODO(), &iam.ListMFADevicesInput{
-		UserName: currentUser.User.UserName,
-	})
-	CheckAndReturnError(err)
+	// iamResp, err := sesIam.ListMFADevices(context.TODO(), &iam.ListMFADevicesInput{
+	// 	UserName: currentUser.User.UserName,
+	// })
+	// CheckAndReturnError(err)
 
-	if len(iamResp.MFADevices) == 0 {
-		fmt.Println("letme: no MFA devices configured.")
-		return ""
-	}
+	// if len(iamResp.MFADevices) == 0 {
+	// 	fmt.Println("letme: no MFA devices configured.")
+	// 	return ""
+	// }
 
-	var mfaDevices []string
-	for _, device := range iamResp.MFADevices {
-		mfaDevices = append(mfaDevices, *device.SerialNumber)
-	}
+	// var mfaDevices []string
+	// for _, device := range iamResp.MFADevices {
+	// 	mfaDevices = append(mfaDevices, *device.SerialNumber)
+	// }
 
-	mfaArnExists := false
+	// mfaArnExists := false
 	for {
 		fmt.Print("→ AWS MFA Device arn (optional): ")
 		fmt.Scanln(&mfaArn)
@@ -386,7 +386,7 @@ func NewContext(context string, mode int) {
 	letmeContext.AwsSourceProfile = sourceProfileInput()
 	letmeContext.AwsSourceProfileRegion = sourceProfileRegionInput()
 	letmeContext.AwsDynamoDbTable = dynamoDbTableInput()
-	letmeContext.AwsMfaArn = mfaArnInput(letmeContext.AwsSourceProfile, letmeContext.AwsSourceProfileRegion)
+	letmeContext.AwsMfaArn = mfaArnInput(letmeContext.AwsSourceProfile)
 	letmeContext.AwsSessionDuration = sessionDurationInput()
 	letmeContext.AwsSessionName = sessionNameInput()
 	letmeContext.Tags = letmeTagsInput()

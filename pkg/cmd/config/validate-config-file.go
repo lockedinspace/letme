@@ -39,6 +39,6 @@ var Validate = &cobra.Command{
 
 func init() {
 	ConfigCmd.AddCommand(Validate)
-	ConfigCmd.Flags().StringP("context", "", "", "validates the context endpoint's reachability")
+	Validate.Flags().StringP("context", "", "", "validates the context endpoint's reachability")
 
 }
